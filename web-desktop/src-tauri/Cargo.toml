@@ -1,0 +1,25 @@
+[package]
+name = "yet-another-grocery-app-desktop"
+version = "0.1.0"
+description = "YetAnotherGroceryApp desktop wrapper (Tauri 2)"
+edition = "2021"
+rust-version = "1.77.2"
+
+[lib]
+name = "web_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-sql = { version = "2", features = ["sqlite"] }
+tauri-plugin-fs = "2"
+tauri-plugin-dialog = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[features]
+# Enable this for custom Tauri commands.
+# custom-protocol = ["tauri/custom-protocol"]
