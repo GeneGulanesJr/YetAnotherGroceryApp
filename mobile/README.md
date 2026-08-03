@@ -60,8 +60,9 @@ described in the technical requirements.
   `stores`, `products`, `product_barcodes`, `prices`, `trips`, `receipts`,
   `receipt_lines`, `purchases`, `shopping_lists`, `shopping_list_items`,
   `sync_mutations`, `sync_meta`), each carrying the shared sync columns
-  (`id`, timestamps, `device_id`, `revision`, `sync_status`) plus indexes on
-  commonly queried and synchronized fields
+  (`id`, timestamps, `device_id`, `revision`, `sync_status`,
+  `field_versions_json`) plus indexes on commonly queried and synchronized
+  fields
 - Money stored as integer minor units with ISO currency code on every monetary
   record (see `src/utils/money.ts`); image records persist local URI, remote
   object key, thumbnail, MIME, dimensions, size, SHA-256, and upload status
