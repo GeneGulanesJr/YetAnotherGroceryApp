@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "YetAnotherGroceryApp",
+    "slug": "yet-another-grocery-app",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "scheme": "yaga",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.yetanothergroceryapp.mobile",
+      "infoPlist": {
+        "NSCameraUsageDescription": "YetAnotherGroceryApp uses the camera to scan barcodes and capture shelf prices and receipts.",
+        "NSPhotoLibraryUsageDescription": "YetAnotherGroceryApp can access your photo library to import product, shelf, and receipt photos."
+      }
+    },
+    "android": {
+      "package": "com.yetanothergroceryapp.mobile",
+      "permissions": ["android.permission.CAMERA"]
+    }
+  }
+}
