@@ -18,7 +18,7 @@ for the full technical requirements.
 - **Recharts** for dashboard charts
 - **Zustand** for transient UI state only
 - **nuqs** for URL-synced dashboard filters (bookmarkable views)
-- **Drizzle ORM** schema (SQLite/libSQL) mirroring the backend + a spending rollup
+- **Drizzle ORM** schema (SQLite/libSQL) mirroring the backend + analytics rollups
 - **Vitest** for unit/component tests
 - Money stored as integer minor units (see `src/lib/money.ts`)
 
@@ -48,7 +48,7 @@ web-desktop/
 │   ├── lib/                 # utils, money (parsing/formatting + tests), DataSource
 │   ├── theme/               # Design tokens
 │   ├── store/               # Zustand (transient UI state)
-│   └── db/                  # Drizzle schema + daily spending rollup
+│   └── db/                  # Drizzle schema mirroring backend + analytics rollups
 ├── src-tauri/               # Tauri 2 desktop wrapper (Rust)
 │   ├── tauri.conf.json      # frontendDist → ../out, native plugins
 │   ├── capabilities/        # least-privilege permissions for the main window
@@ -89,8 +89,22 @@ surfaces described in the technical requirements.
 - Tailwind + shadcn/ui theming with light/dark mode (next-themes)
 - TanStack Query and Zustand providers wired up
 - Spending dashboard placeholder with summary stat cards + a Recharts chart
-- Drizzle schema for `products`, `stores`, `purchases` (shared sync columns)
-  plus a `daily_spending_rollups` table
+- Drizzle schema mirroring the backend tables (`categories`, `images`,
+  `stores`, `products`, `product_barcodes`, `prices`, `trips`, `receipts`,
+  `receipt_lines`, `purchases`, `shopping_lists`, `shopping_list_items`,
+  `sync_mutations`, `sync_meta`), each carrying the shared sync columns
+  (`id`, timestamps, `device_id`, `revision`, `sync_status`) plus indexes on
+  commonly queried and synchronized fields — so the desktop SQLite replica can
+  apply the same delta-sync payloads as mobile
+- Desktop analytics rollups (`daily_spending_rollups`,
+  `monthly_spending_rollups`, `product_price_rollups`,
+  `store_product_price_rollups`, `category_spending_rollups`,
+  `receipt_savings_rollups`) maintained in code and rebuildable from canonical
+  records, per `tech.desktop.md`
+- Money stored as integer minor units with an ISO currency code on every
+  monetary record (see `src/lib/money.ts`); image records persist local URI,
+  remote object key, thumbnail, MIME, dimensions, size, SHA-256, and upload
+  status
 - Shared `DataSource` interface so web (API) and desktop (SQLite) targets share
   dashboard components
 - Integer-minor-unit money parsing/formatting utilities with unit tests
