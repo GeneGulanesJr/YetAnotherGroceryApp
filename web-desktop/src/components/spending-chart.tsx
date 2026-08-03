@@ -2,8 +2,13 @@
 
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
+import { formatMoney, formatMoneyCompact } from "@/lib/money";
+
 interface SpendingChartProps {
-  data: { day: string; amount: number }[];
+  // `amountMinor` is integer minor units (e.g. cents/centavos), matching the
+  // shared money model in src/lib/money.ts. The chart must NOT treat these as
+  // major units when formatting currency.
+  data: { day: string; amountMinor: number }[];
   currency: string;
 }
 
@@ -33,11 +38,7 @@ export function SpendingChart({ data, currency }: SpendingChartProps) {
             axisLine={false}
             width={48}
             tickFormatter={(value: number) =>
-              new Intl.NumberFormat(undefined, {
-                style: "currency",
-                currency,
-                notation: "compact",
-              }).format(value)
+              formatMoneyCompact({ amountMinor: value, currency })
             }
           />
           <Tooltip
@@ -48,12 +49,12 @@ export function SpendingChart({ data, currency }: SpendingChartProps) {
               color: "hsl(var(--foreground))",
             }}
             formatter={(value: number) =>
-              new Intl.NumberFormat(undefined, { style: "currency", currency }).format(value)
+              formatMoney({ amountMinor: value, currency })
             }
           />
           <Area
             type="monotone"
-            dataKey="amount"
+            dataKey="amountMinor"
             stroke="hsl(var(--primary))"
             strokeWidth={2}
             fill="url(#spendFill)"

@@ -74,6 +74,23 @@ export function formatMoney(money: Money, locale = "en-US"): string {
   }
 }
 
+/**
+ * Compact currency formatting for chart axes where full values would overflow.
+ * Values are still derived from integer minor units (`amountMinor / 100`).
+ */
+export function formatMoneyCompact(money: Money, locale = "en-US"): string {
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency: money.currency,
+      notation: "compact",
+      maximumFractionDigits: 1,
+    }).format(money.amountMinor / 100);
+  } catch {
+    return `${(money.amountMinor / 100).toFixed(1)} ${money.currency}`;
+  }
+}
+
 export function assertSameCurrency(a: Money, b: Money): void {
   if (a.currency !== b.currency) {
     throw new Error(`Currency mismatch: ${a.currency} vs ${b.currency}`);

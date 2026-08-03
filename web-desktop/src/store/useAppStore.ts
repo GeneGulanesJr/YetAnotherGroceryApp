@@ -7,9 +7,11 @@ export type SyncStatus = "idle" | "syncing" | "error";
  * is read from the shared DataSource / backend API and never stored here.
  */
 export interface AppState {
-  sidebarOpen: boolean;
-  toggleSidebar: () => void;
-  setSidebarOpen: (open: boolean) => void;
+  // Controls the slide-over navigation shown below the `md` breakpoint. The
+  // desktop sidebar is always visible, so this only affects tablet/mobile.
+  mobileNavOpen: boolean;
+  toggleMobileNav: () => void;
+  setMobileNavOpen: (open: boolean) => void;
 
   syncStatus: SyncStatus;
   lastSyncedAt: number | null;
@@ -20,9 +22,9 @@ export interface AppState {
 }
 
 export const useAppStore = create<AppState>((set) => ({
-  sidebarOpen: true,
-  toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
-  setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
+  mobileNavOpen: false,
+  toggleMobileNav: () => set((state) => ({ mobileNavOpen: !state.mobileNavOpen })),
+  setMobileNavOpen: (mobileNavOpen) => set({ mobileNavOpen }),
 
   syncStatus: "idle",
   lastSyncedAt: null,
