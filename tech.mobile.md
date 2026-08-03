@@ -13,7 +13,7 @@ desktop application also reads from.
 - Offline-first: all features (scanning, price capture, receipt verification,
   shopping lists, summaries) work without a network connection.
 - Background sync when connectivity returns.
-- Minimum OS targets: Android 8.0 (API 26), iOS 13.
+- Minimum OS targets: Android 8.0 (API 26), iOS 16 (required by `expo-mlkit-ocr`).
 
 ## Framework & Language
 
@@ -25,13 +25,58 @@ desktop application also reads from.
 
 ## Core Capture Libraries
 
+All capture (camera, barcode, OCR) goes through a single provider: **Google ML Kit
+standalone SDK** (no Firebase). This sidesteps the Firebase ML Kit deprecation
+(shutdown June 15, 2027), keeps the dependency surface small, and runs fully
+on-device and offline.
+
 | Capability | Library / Service |
 | --- | --- |
-| Camera + barcode scanning | `expo-camera` with built-in barcode detection, plus `react-native-vision-camera` when fine-grained control is needed |
-| Barcode formats | EAN-13, EAN-8, UPC-A, UPC-E, QR (via ML Kit / VisionCamera barcode plugin) |
-| Shelf-price OCR (on-device) | **Google ML Kit Text Recognition v2** (`@react-native-ml-kit/text-recognition`) — fast, free, offline |
-| Receipt OCR | ML Kit first pass for line items; optional cloud fallback (**Google Cloud Vision** `DOCUMENT_TEXT_DETECTION`) for long, dense receipts |
+| Camera + barcode scanning | `react-native-vision-camera` with built-in `codeScanner` (Google ML Kit under the hood) |
+| Barcode formats | EAN-13, EAN-8, UPC-A, UPC-E, QR (Google ML Kit Barcode) |
+| OCR (shelf-price + receipt) | `expo-mlkit-ocr` — Google ML Kit Text Recognition v2, structured blocks/lines/elements with bounding boxes, on-device, tap-to-capture high-res still |
+| Manual product capture | In-app form for unknown barcodes (name, brand, category, package size, unit, optional photo, optional notes) |
 | Price parsing | Custom TS parser to normalize currency, units, and line-item totals |
+
+ML Kit models are **bundled** on both platforms (offline-first from first launch).
+Acceptable size cost documented in Performance & Storage Targets and Risks.
+
+## Capture Flow
+
+All OCR (shelf-price and receipt) follows the same path:
+
+1. User taps "capture" to grab a high-res still from the camera.
+2. `expo-mlkit-ocr` runs on the still and returns structured blocks/lines/elements
+   with bounding boxes.
+3. The result is rendered with a tap-to-confirm overlay (`<MlkitOcrOverlay>`).
+4. User confirms or edits the detected value(s); the raw OCR value and the
+   user-corrected value are both stored.
+
+For receipts, the user confirms each line item (product, quantity, price) before
+saving.
+
+### Barcode scan → known vs unknown
+
+- Scan barcode → ML Kit (via VisionCamera `codeScanner`) → lookup SQLite.
+  - **Found** → existing product → shelf-price capture flow.
+  - **Not found** → manual product capture screen → save product → shelf-price
+    capture flow.
+
+### Manual product capture
+
+When a barcode scan returns no match in the local SQLite database, the user is
+guided through a manual product capture screen:
+
+- Product name (required)
+- Brand
+- Category
+- Package size
+- Unit (g, kg, mL, L, pcs, etc.)
+- Optional product photo
+- Optional personal notes
+
+The barcode (scanned value) is stored as the canonical identifier so future scans
+of the same barcode skip the manual step.
 
 ## Image Handling
 
@@ -120,6 +165,9 @@ with `expo-sqlite`, and schema can be shared with the desktop build).
 - OCR confirm step always allows user edit before persisting.
 - Local DB expected to grow ~1–3 MB per 100 purchases incl. thumbnails;
   original images offloaded to object storage after sync.
+- Bundled Google ML Kit models (text recognition v2 + barcode) add ~20–40 MB
+  to each platform binary; accepted as the cost of offline-first from first
+  launch.
 
 ## Key Risks & Mitigations
 
@@ -129,3 +177,13 @@ with `expo-sqlite`, and schema can be shared with the desktop build).
   offer "increase quantity" instead of new entry.
 - **Sync conflicts** → timestamp-based LWW per field with audit trail of
   conflicting revisions.
+- **ML Kit version pinning** → use the standalone ML Kit SDK only (no Firebase
+  path), pin `expo-mlkit-ocr` and ML Kit Android/iOS coordinate versions
+  explicitly to avoid drifting onto the deprecated Firebase ML Kit path
+  (shutdown June 15, 2027).
+- **ML Kit binary size** → bundled models add ~20–40 MB per platform; monitor
+  with EAS Build size budgets and consider unbundled (Play Services) deployment
+  if size pressure grows.
+- **Manual product capture friction** → unknown barcodes require a form
+  (name/brand/category/package size/unit); mitigate with "recently used
+  brands/categories" pickers and per-category default units.
