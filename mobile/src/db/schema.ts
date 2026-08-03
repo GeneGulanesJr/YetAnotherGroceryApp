@@ -10,6 +10,7 @@ export const syncColumns = {
   syncStatus: text("sync_status", {
     enum: ["pending", "synced", "error"],
   }).notNull(),
+  fieldVersionsJson: text("field_versions_json"),
 };
 
 export const categories = sqliteTable(
