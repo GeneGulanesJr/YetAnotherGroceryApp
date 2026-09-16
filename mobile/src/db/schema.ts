@@ -1,15 +1,29 @@
 import { index, integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { newId } from "./context";
 
+// $defaultFn makes the tracking-managed columns optional in insert types
+// (JS-level only — the generated SQL DDL is unchanged). outbox.ts always
+// overrides them with authoritative values on every tracked write.
 export const syncColumns = {
-  id: text("id").primaryKey(),
-  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
-  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => newId()),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+    .notNull()
+    .$defaultFn(() => new Date()),
   deletedAt: integer("deleted_at", { mode: "timestamp_ms" }),
-  deviceId: text("device_id").notNull(),
+  deviceId: text("device_id")
+    .notNull()
+    .$defaultFn(() => "unassigned"),
   revision: integer("revision").notNull().default(0),
   syncStatus: text("sync_status", {
     enum: ["pending", "synced", "error"],
-  }).notNull(),
+  })
+    .notNull()
+    .$defaultFn(() => "pending"),
   fieldVersionsJson: text("field_versions_json"),
 };
 

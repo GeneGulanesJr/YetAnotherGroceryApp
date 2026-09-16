@@ -9,7 +9,9 @@
     "ios": "expo run:ios",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "jest"
+    "test": "jest",
+    "db:generate": "drizzle-kit generate",
+    "db:embed": "node scripts/embed-migrations.mjs"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
@@ -21,6 +23,7 @@
     "expo": "^57.0.23",
     "expo-build-properties": "~57.0.20",
     "expo-font": "~57.0.4",
+    "expo-sqlite": "~57.0.3",
     "expo-status-bar": "~57.0.1",
     "nativewind": "4.2.7",
     "react": "19.2.3",
@@ -32,13 +35,17 @@
     "react-native-svg": "15.15.4",
     "react-native-worklets": "0.10.1",
     "tailwindcss": "^3.4.17",
+    "uuid": "^14.0.2",
     "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
+    "@types/better-sqlite3": "^9.6.0",
     "@types/jest": "^29.5.14",
     "@types/react": "~19.2.0",
     "babel-preset-expo": "~57.0.0",
+    "better-sqlite3": "^13.0.3",
+    "drizzle-kit": "^0.31.10",
     "eslint": "^9.39.5",
     "eslint-config-expo": "^57.0.2",
     "jest-expo": "~57.0.5",
