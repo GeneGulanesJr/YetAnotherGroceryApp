@@ -1,15 +1,29 @@
 import { index, integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { newId } from "./context";
 
+// $defaultFn makes the tracking-managed columns optional in insert types
+// (JS-level only — the generated SQL DDL is unchanged). outbox.ts always
+// overrides them with authoritative values on every tracked write.
 export const syncColumns = {
-  id: text("id").primaryKey(),
-  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
-  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => newId()),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+    .notNull()
+    .$defaultFn(() => new Date()),
   deletedAt: integer("deleted_at", { mode: "timestamp_ms" }),
-  deviceId: text("device_id").notNull(),
+  deviceId: text("device_id")
+    .notNull()
+    .$defaultFn(() => "unassigned"),
   revision: integer("revision").notNull().default(0),
   syncStatus: text("sync_status", {
     enum: ["pending", "synced", "error"],
-  }).notNull(),
+  })
+    .notNull()
+    .$defaultFn(() => "pending"),
   fieldVersionsJson: text("field_versions_json"),
 };
 
@@ -135,6 +149,10 @@ export const prices = sqliteTable(
     taxIncluded: integer("tax_included"),
     capturedAt: integer("captured_at", { mode: "timestamp_ms" }).notNull(),
     sourceImageId: text("source_image_id").references(() => images.id),
+    // OCR provenance per the capture-flow spec: raw value, confidence; the
+    // user-confirmed value lands in the *_price_minor columns above.
+    ocrRawText: text("ocr_raw_text"),
+    ocrConfidence: real("ocr_confidence"),
   },
   (table) => ({
     productIdIdx: index("prices_product_id_idx").on(table.productId),
@@ -357,6 +375,57 @@ export const syncMeta = sqliteTable("sync_meta", {
   updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
 });
 
+/**
+ * Store-specific receipt aliases (spec: confirmed receipt-line matches are
+ * learned so future receipts at the same store map descriptions to products).
+ */
+export const receiptAliases = sqliteTable(
+  "receipt_aliases",
+  {
+    ...syncColumns,
+    storeId: text("store_id").references(() => stores.id),
+    alias: text("alias").notNull(),
+    productId: text("product_id")
+      .notNull()
+      .references(() => products.id),
+  },
+  (table) => ({
+    aliasIdx: index("receipt_aliases_alias_idx").on(table.alias),
+    storeIdx: index("receipt_aliases_store_idx").on(table.storeId),
+    productIdx: index("receipt_aliases_product_idx").on(table.productId),
+    updatedAtIdx: index("receipt_aliases_updated_at_idx").on(table.updatedAt),
+    deletedAtIdx: index("receipt_aliases_deleted_at_idx").on(table.deletedAt),
+    syncStatusIdx: index("receipt_aliases_sync_status_idx").on(table.syncStatus),
+  }),
+);
+
+/**
+ * Local audit trail required by the sync spec (conflict resolution):
+ * every field-level conflict records both sides, the winner, and origins.
+ * Device-local; never synced.
+ */
+export const syncConflicts = sqliteTable(
+  "sync_conflicts",
+  {
+    id: text("id").primaryKey(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+    tableName: text("table_name").notNull(),
+    recordId: text("record_id").notNull(),
+    field: text("field").notNull(),
+    winningSide: text("winning_side", { enum: ["local", "server"] }).notNull(),
+    winningValueJson: text("winning_value_json"),
+    losingValueJson: text("losing_value_json"),
+    localRevision: integer("local_revision"),
+    remoteRevision: integer("remote_revision"),
+    localDeviceId: text("local_device_id"),
+    remoteDeviceId: text("remote_device_id"),
+  },
+  (table) => ({
+    recordIdx: index("sync_conflicts_record_idx").on(table.tableName, table.recordId),
+    createdIdx: index("sync_conflicts_created_idx").on(table.createdAt),
+  }),
+);
+
 export type Category = typeof categories.$inferSelect;
 export type ImageRecord = typeof images.$inferSelect;
 export type Store = typeof stores.$inferSelect;
@@ -371,3 +440,5 @@ export type ShoppingList = typeof shoppingLists.$inferSelect;
 export type ShoppingListItem = typeof shoppingListItems.$inferSelect;
 export type SyncMutation = typeof syncMutations.$inferSelect;
 export type SyncMeta = typeof syncMeta.$inferSelect;
+export type SyncConflict = typeof syncConflicts.$inferSelect;
+export type ReceiptAlias = typeof receiptAliases.$inferSelect;

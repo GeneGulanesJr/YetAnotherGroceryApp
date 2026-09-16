@@ -7,6 +7,64 @@ desktop application also reads from.
 
 ---
 
+## Implementation Status (2026-09)
+
+Implemented on the `feat/mobile-core-capture-mvp` branch; verified on a physical
+Android device via Expo Go. This section records decisions and deviations; the
+requirements below remain the target design.
+
+* **Expo SDK 57** baseline (React Native 0.86, React 19, New Architecture,
+  TypeScript ~6.0.3). Pinned compatible versions are documented in
+  `mobile/README.md`.
+* **Barcode scanning uses `expo-camera`, not `react-native-vision-camera`.**
+  VisionCamera v5 (Nitro rewrite) removed the built-in `codeScanner` this
+  document assumed, and v4 predates RN 0.86. expo-camera provides ML Kit
+  barcode recognition on Android within the officially supported SDK surface.
+  Revisit alongside the OCR milestone — `expo-mlkit-ocr` runs on still images
+  and pairs with any camera library.
+* **Local database is live**: `expo-sqlite` + Drizzle, WAL + foreign keys, a
+  versioned migration runner (SQLite `user_version`) over drizzle-kit SQL
+  embedded into the bundle (`scripts/embed-migrations.mjs`), so device and
+  jest (better-sqlite3 fixtures) execute identical migrations.
+* **Outbox implemented from day one**: `src/db/outbox.ts` stamps the sync
+  columns and appends a `sync_mutations` row for every insert/update/delete
+  (deletes are tombstones), exactly as the sync engine section requires. The
+  sync client only has to drain the outbox once the backend exists.
+* **Client ids** are v4 UUIDs generated locally (no `uuid` package — its ESM
+  build dereferences the global `crypto` object, which Hermes does not
+  provide).
+* **OCR capture flow is implemented** (`expo-mlkit-ocr` 0.2.7, pinned):
+  shelf-tag photo → on-device OCR → tap-to-confirm overlay
+  (`OCRTextOverlay`) → ranked price candidates (`priceParse.ts`, tested) →
+  price capture stores raw OCR text, confidence, and the source image.
+  A tested coordinate-transform layer (`transform.ts`) backs overlay math.
+  OCR runs only in development/custom builds — in Expo Go the flow degrades
+  to manual entry.
+* **Receipt verification v1**: receipt photo → OCR → classified editable
+  lines (`receiptParse.ts`: product/total/subtotal/tax/discount/payment,
+  header/footer by position, quantity extraction) → transactional save
+  (`createReceiptWithLines`) → normalized-name matching against the trip's
+  purchases with per-line shelf-vs-receipt discrepancy and overcharge rollup.
+* **Sync engine (client side) is implemented** against the protocol below:
+  batched outbox push, cursor-based delta pull, exponential backoff with
+  attempt gating, idempotent runs, field-level LWW application, and a local
+  `sync_conflicts` audit table (migration 0002) — all integration-tested
+  against a mock transport (`src/sync/`). The fetch transport activates from
+  `app.json` `extra.apiBaseUrl`; while unset, sync reports "unconfigured"
+  and the app stays purely offline. Startup + foreground-resume triggers are
+  wired; the Settings screen exposes manual "Sync now" with pending counts.
+* **Receipt aliases + background tasks are implemented**: confirmed receipt
+  matches learn store-specific aliases (migration 0003) that resolve later
+  receipts even after renames; a periodic best-effort background sync task
+  (`expo-task-manager` + `expo-background-task`, never the deprecated
+  `expo-background-fetch`) is registered at startup — effective in
+  development/custom builds, with foreground triggers remaining primary.
+* Still pending from this document: the backend that implements
+  `/sync/push` + `/sync/pull` (Turso), auth, image upload to object storage,
+  Detox E2E.
+
+---
+
 ## Platform Strategy
 
 * Cross-platform single codebase targeting **Android** and **iOS**.

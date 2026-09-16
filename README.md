@@ -1,4 +1,57 @@
 # YetAnotherGroceryApp
-This is yet another grocery app
 
-A personal grocery management application that helps users track purchases, monitor price history, verify receipt accuracy, and analyze long-term grocery spending. Built with offline-first support, cloud synchronization, and personal analytics to help users make smarter shopping decisions.
+A personal grocery management application that helps users track purchases,
+monitor price history, verify receipt accuracy, and analyze long-term grocery
+spending. Built with offline-first support, cloud synchronization, and
+personal analytics to help users make smarter shopping decisions.
+
+## Repository layout
+
+| Path | What it is | Status |
+| --- | --- | --- |
+| `mobile/` | Expo (SDK 57) + React Native app — the data-capture surface | **Working core**: offline SQLite + barcode scanning + trips/lists/library; verified on device via Expo Go |
+| `web-desktop/` | Next.js 14 web app + Tauri 2 desktop shell — the analytics surface | **Data foundation live**: SQLite replica + SQL analytics via DataSource, dashboard wired; backend-dormant |
+| `specs.md` | Functional/product specification | Stable |
+| `tech.mobile.md` | Mobile technical requirements (+ implementation status) | Source of truth for mobile |
+| `tech.desktop.md` | Web/desktop technical requirements | Design only |
+
+The shared backend (delta sync + Turso) is not started; see the sync engine
+section of `tech.mobile.md` for the intended protocol. The mobile app already
+journals every mutation into a `sync_mutations` outbox, so the future sync
+client only has to drain it.
+
+## Quickstart (mobile)
+
+```sh
+cd mobile
+npm install
+npm run typecheck && npm run lint && npm test   # 50 tests, no device needed
+npx expo start                                  # then scan with Expo Go
+```
+
+The mobile app has no third-party native modules, so it runs directly in
+Expo Go — no dev build required. Device testing notes (firewall, tunnel
+fallback) live in [`mobile/README.md`](mobile/README.md).
+
+## Milestones
+
+- [x] Expo SDK 57 baseline, CI (typecheck/lint/jest), EAS project linked
+- [x] Offline-first database: Drizzle schema, migrations, repositories,
+      outbox + tombstones (every write journaled for sync)
+- [x] Capture flow: barcode scanning (expo-camera/ML Kit), manual product
+      capture, price capture, duplicate-scan handling
+- [x] OCR price capture (`expo-mlkit-ocr`) with tap-to-confirm overlay
+- [x] Receipt v1: OCR line classification, editable confirmation, trip
+      matching, shelf-vs-receipt discrepancy and overcharge rollup
+- [x] Shopping trips (survive app kills), lists → trips, library, history
+- [x] Device-verified via Expo Go (OCR paths need a dev/custom build)
+- [x] Sync engine client: outbox push, cursor pull, field-level LWW,
+      conflict audit, backoff — tested against a mock transport; activates
+      automatically once `extra.apiBaseUrl` points at a backend
+- [x] Receipt alias learning (store-scoped) + background sync task
+- [x] Desktop data foundation: local SQLite replica migrations, SQL
+      analytics source (Tauri plugin-sql, tested on better-sqlite3), domain
+      analytics module, live dashboard through the shared DataSource
+- [ ] Signed APK via EAS Build (config ready; build on demand)
+- [ ] Sync backend implementing `/sync/push` + `/sync/pull` (Turso)
+- [ ] Background tasks, auth (Clerk), Detox E2E

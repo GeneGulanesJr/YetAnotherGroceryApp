@@ -1,4 +1,6 @@
-# Tech Requiremeis the analytics, reporting, and data-management
+# Tech Requirements — Web / Desktop Application
+
+The web/desktop application is the analytics, reporting, and data-management
 
 surface for YetAnotherGroceryApp.
 
@@ -6,6 +8,32 @@ It consumes purchase, price, receipt, product, store, and shopping-trip data
 captured by the mobile application through the shared backend and transforms it
 into dashboards, product/store/category analytics, price intelligence, savings
 insights, search tools, and exportable reports.
+
+---
+
+## Implementation Status (2026-09)
+
+Implemented on the `feat/mobile-core-capture-mvp` branch; both build targets
+(web + static export) are validated in CI.
+
+* **Data foundation is live**: the desktop SQLite replica applies the same
+  embedded migrations as mobile (`user_version` runner over `drizzle/*.sql`,
+  embedded by `scripts/embed-migrations.mjs`) through Tauri `plugin-sql`, and
+  reads analytics in SQL (summary, bucketed series, store/category joins,
+  window-function price statistics) via `DesktopSqliteDataSource`. The exact
+  SQL is integration-tested against better-sqlite3 fixtures.
+* **Platform selection lives behind the shared `DataSource` interface** as
+  this document requires: Tauri runtime → local SQLite; web with
+  `NEXT_PUBLIC_API_BASE_URL` → `ApiDataSource` (typed contract for the future
+  backend analytics endpoints, dormant while unset); otherwise
+  `PlaceholderDataSource` empty states.
+* **Dashboard is wired to the DataSource**: stat cards, series chart,
+  store/category breakdowns, price watch with trend + at-low/at-high flags,
+  range filter, and loading/empty/error states.
+* `field_versions_json` parity with the mobile schema is restored (the
+  earlier desktop copy had drifted).
+* Still pending: the backend (analytics endpoints + sync), Clerk auth,
+  desktop sync write path, rollup jobs, tables/search/exports, Playwright.
 
 ---
 
