@@ -131,6 +131,15 @@ export function classifyReceiptLines(rawLines: readonly string[]): ParsedReceipt
   });
 }
 
+/** Removes a trailing amount and quantity markers, leaving the description. */
+export function stripAmountAndQuantity(text: string): string {
+  return text
+    .replace(TRAILING_PRICE, "")
+    .replace(QUANTITY, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 /** Normalizes descriptions for alias/product matching (case/punctuation-insensitive). */
 export function normalizeDescription(text: string): string {
   return text

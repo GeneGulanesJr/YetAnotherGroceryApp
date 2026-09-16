@@ -111,5 +111,17 @@ export const migrations: EmbeddedMigration[] = [
       "CREATE INDEX `sync_conflicts_record_idx` ON `sync_conflicts` (`table_name`,`record_id`);",
       "CREATE INDEX `sync_conflicts_created_idx` ON `sync_conflicts` (`created_at`);"
     ]
+  },
+  {
+    id: "0003_receipt_aliases",
+    statements: [
+      "CREATE TABLE `receipt_aliases` (\n\t`id` text PRIMARY KEY NOT NULL,\n\t`created_at` integer NOT NULL,\n\t`updated_at` integer NOT NULL,\n\t`deleted_at` integer,\n\t`device_id` text NOT NULL,\n\t`revision` integer DEFAULT 0 NOT NULL,\n\t`sync_status` text NOT NULL,\n\t`field_versions_json` text,\n\t`store_id` text,\n\t`alias` text NOT NULL,\n\t`product_id` text NOT NULL,\n\tFOREIGN KEY (`store_id`) REFERENCES `stores`(`id`) ON UPDATE no action ON DELETE no action,\n\tFOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON UPDATE no action ON DELETE no action\n);",
+      "CREATE INDEX `receipt_aliases_alias_idx` ON `receipt_aliases` (`alias`);",
+      "CREATE INDEX `receipt_aliases_store_idx` ON `receipt_aliases` (`store_id`);",
+      "CREATE INDEX `receipt_aliases_product_idx` ON `receipt_aliases` (`product_id`);",
+      "CREATE INDEX `receipt_aliases_updated_at_idx` ON `receipt_aliases` (`updated_at`);",
+      "CREATE INDEX `receipt_aliases_deleted_at_idx` ON `receipt_aliases` (`deleted_at`);",
+      "CREATE INDEX `receipt_aliases_sync_status_idx` ON `receipt_aliases` (`sync_status`);"
+    ]
   }
 ];

@@ -9,7 +9,8 @@ import {
 } from "../schema";
 import { now } from "../context";
 import { trackInsert, trackUpdate } from "../outbox";
-import { normalizeDescription } from "../../capture/receiptParse";
+import { normalizeDescription, stripAmountAndQuantity } from "../../capture/receiptParse";
+import { findProductIdByAlias, learnAlias } from "./receipt-aliases";
 import type { Db } from "../types";
 
 export interface ConfirmedReceiptLine {
@@ -72,10 +73,33 @@ export function createReceiptWithLines(db: Db, input: CreateReceiptInput): Recei
       let matchedAlias: string | null = null;
 
       if (line.lineType === "product" && input.tripId !== null) {
+        const description = stripAmountAndQuantity(
+          line.descriptionCorrected ?? line.descriptionRaw ?? "",
+        );
         const match = matchTripPurchase(tx, input.tripId, line);
         if (match !== null) {
           productId = match.productId;
-          matchedAlias = line.descriptionCorrected ?? line.descriptionRaw ?? null;
+          matchedAlias = description;
+          // Learn: confirmed receipt description -> product at this store.
+          learnAlias(tx, {
+            storeId: input.storeId,
+            alias: normalizeDescription(description),
+            productId: match.productId,
+          });
+        } else {
+          // Fall back to previously learned aliases for this store.
+          const aliasProductId = findProductIdByAlias(
+            tx,
+            normalizeDescription(description),
+            input.storeId,
+          );
+          if (
+            aliasProductId !== null &&
+            tripHasUnmatchedPurchase(tx, input.tripId, aliasProductId)
+          ) {
+            productId = aliasProductId;
+            matchedAlias = description;
+          }
         }
       }
 
@@ -168,6 +192,29 @@ function matchTripPurchase(
   });
 
   return matches.length === 1 ? matches[0] : null;
+}
+
+/** Alias matches may only attach to products actually bought (unmatched) on the trip. */
+function tripHasUnmatchedPurchase(
+  db: Parameters<Parameters<Db["transaction"]>[0]>[0],
+  tripId: string,
+  productId: string,
+): boolean {
+  return (
+    db
+      .select({ id: purchases.id })
+      .from(purchases)
+      .where(
+        and(
+          eq(purchases.tripId, tripId),
+          eq(purchases.productId, productId),
+          isNull(purchases.deletedAt),
+          isNull(purchases.receiptId),
+        ),
+      )
+      .limit(1)
+      .get() !== undefined
+  );
 }
 
 export interface ReceiptSummaryLine extends Receipt {

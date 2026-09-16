@@ -83,6 +83,12 @@ described in the technical requirements.
   by position; quantity parsing) → transactional save with normalized-name
   matching to the trip's purchases → per-line shelf-vs-receipt discrepancy
   and overcharge rollup surfaced in the trip summary and History
+- **Receipt alias learning**: confirmed line matches are stored as
+  store-specific aliases (migration 0003) and resolve later receipts even
+  after product renames, preferring store scope over global
+- **Background sync task** (`expo-task-manager` + `expo-background-task`,
+  15-min minimum interval, best-effort per spec — foreground triggers remain
+  the reliable path; needs a development/custom build to run)
 - Image pipeline (`src/capture/images.ts`): expo-image-manipulator compression
   + thumbnails, document-directory storage, byte-level SHA-256 — binaries
   never enter SQLite
@@ -98,9 +104,9 @@ described in the technical requirements.
   `extra.apiBaseUrl` is set (transport: `src/sync/transport.ts`).
 - Money as integer minor units with ISO currency; unit-price math
   (per 100 g / 100 mL / piece, multi-packs) — all pure utils under test
-- 82 tests: outbox semantics, barcode utils, trip lifecycle, app-kill
-  persistence on real files, list aggregates, receipts/discrepancies, LWW
-  merge, sync engine runs, money, unit prices
+- 83 tests: outbox semantics, barcode utils, trip lifecycle, app-kill
+  persistence on real files, list aggregates, receipts/discrepancies/aliases,
+  LWW merge, sync engine runs, money, unit prices
 
 ### Deviation from tech.mobile.md
 
@@ -176,7 +182,5 @@ npx eas-cli build -p android --profile development  # dev client APK for iterati
 - The sync **backend** implementing `/sync/push` + `/sync/pull` over Turso
   (set `extra.apiBaseUrl` in app.json or via EAS env when it ships; the
   client is complete and tested)
-- Background tasks (`expo-task-manager`, `expo-background-task`)
-- Store-specific receipt alias learning (v1 matches by normalized names)
-- Auth (Clerk) and image upload to object storage
+- Auth (Clerk) and image upload to object storage (backend-boundary items)
 - E2E tests (Detox)

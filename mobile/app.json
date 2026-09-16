@@ -43,7 +43,8 @@
         {
           "photosPermission": "YetAnotherGroceryApp can access your photo library to import product photos."
         }
-      ]
+      ],
+      "expo-background-task"
     ]
   }
 }

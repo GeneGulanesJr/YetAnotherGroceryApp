@@ -78,8 +78,7 @@ export function HistoryScreen() {
 
         <Text className="mt-6 text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
           Receipts
-        </Text>
-        {receipts.length === 0 ? (
+        </Text>        {receipts.length === 0 ? (
           <Text className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             Attach a receipt photo from an active trip to verify prices against
             what you recorded on the shelf.
@@ -113,10 +112,6 @@ export function HistoryScreen() {
             ))}
           </View>
         )}
-
-        <Text className="mt-2 text-center text-xs text-slate-400">
-          Receipts and discrepancy reports arrive with the OCR milestone.
-        </Text>
       </View>
 
       {openTrip !== null ? (

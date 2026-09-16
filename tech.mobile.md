@@ -53,9 +53,15 @@ requirements below remain the target design.
   `app.json` `extra.apiBaseUrl`; while unset, sync reports "unconfigured"
   and the app stays purely offline. Startup + foreground-resume triggers are
   wired; the Settings screen exposes manual "Sync now" with pending counts.
+* **Receipt aliases + background tasks are implemented**: confirmed receipt
+  matches learn store-specific aliases (migration 0003) that resolve later
+  receipts even after renames; a periodic best-effort background sync task
+  (`expo-task-manager` + `expo-background-task`, never the deprecated
+  `expo-background-fetch`) is registered at startup — effective in
+  development/custom builds, with foreground triggers remaining primary.
 * Still pending from this document: the backend that implements
-  `/sync/push` + `/sync/pull` (Turso), background tasks, auth, Detox E2E,
-  store-specific receipt aliases learning.
+  `/sync/push` + `/sync/pull` (Turso), auth, image upload to object storage,
+  Detox E2E.
 
 ---
 

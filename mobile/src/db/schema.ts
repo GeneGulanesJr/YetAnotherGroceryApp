@@ -376,6 +376,30 @@ export const syncMeta = sqliteTable("sync_meta", {
 });
 
 /**
+ * Store-specific receipt aliases (spec: confirmed receipt-line matches are
+ * learned so future receipts at the same store map descriptions to products).
+ */
+export const receiptAliases = sqliteTable(
+  "receipt_aliases",
+  {
+    ...syncColumns,
+    storeId: text("store_id").references(() => stores.id),
+    alias: text("alias").notNull(),
+    productId: text("product_id")
+      .notNull()
+      .references(() => products.id),
+  },
+  (table) => ({
+    aliasIdx: index("receipt_aliases_alias_idx").on(table.alias),
+    storeIdx: index("receipt_aliases_store_idx").on(table.storeId),
+    productIdx: index("receipt_aliases_product_idx").on(table.productId),
+    updatedAtIdx: index("receipt_aliases_updated_at_idx").on(table.updatedAt),
+    deletedAtIdx: index("receipt_aliases_deleted_at_idx").on(table.deletedAt),
+    syncStatusIdx: index("receipt_aliases_sync_status_idx").on(table.syncStatus),
+  }),
+);
+
+/**
  * Local audit trail required by the sync spec (conflict resolution):
  * every field-level conflict records both sides, the winner, and origins.
  * Device-local; never synced.
@@ -417,3 +441,4 @@ export type ShoppingListItem = typeof shoppingListItems.$inferSelect;
 export type SyncMutation = typeof syncMutations.$inferSelect;
 export type SyncMeta = typeof syncMeta.$inferSelect;
 export type SyncConflict = typeof syncConflicts.$inferSelect;
+export type ReceiptAlias = typeof receiptAliases.$inferSelect;

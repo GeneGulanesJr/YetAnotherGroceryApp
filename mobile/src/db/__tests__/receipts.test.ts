@@ -1,9 +1,10 @@
 import { eq } from "drizzle-orm";
 
-import { purchases } from "../schema";
-import { createProduct } from "../repositories/products";
+import { purchases, receiptAliases } from "../schema";
+import { createProduct, updateProduct } from "../repositories/products";
 import { createReceiptWithLines, listReceipts } from "../repositories/receipts";
 import { addProductToTrip, startTrip } from "../repositories/trips";
+import { createStore } from "../repositories/stores";
 import { createTestDb } from "../test-helpers";
 import type { Db } from "../types";
 
@@ -90,5 +91,43 @@ describe("receipts", () => {
     });
 
     expect(receipt.overchargeMinor).toBeNull();
+  });
+
+  it("learns store aliases and resolves them when containment no longer matches", () => {
+    const store = createStore(db, { name: "Save More" });
+    const milk = createProduct(db, { name: "Nestle Fresh Milk" });
+
+    // Trip 1: containment matches ("...fresh milk 1l" contains the product
+    // name), and the exact receipt description is learned as an alias.
+    const trip1 = startTrip(db, { currency: "PHP", storeId: store.id });
+    addProductToTrip(db, { tripId: trip1.id, productId: milk.id, currency: "PHP", shelfPriceMinor: 12_000 });
+    createReceiptWithLines(db, {
+      tripId: trip1.id,
+      storeId: store.id,
+      currency: "PHP",
+      lines: [
+        { lineType: "product", descriptionRaw: "NESTLE FRESH MILK 1L 120.00", descriptionCorrected: null, quantity: 1, unitPriceMinor: 12_000, lineTotalMinor: 12_000 },
+      ],
+    });
+    expect(
+      db.select().from(receiptAliases).all().map((a) => a.alias),
+    ).toContain("nestle fresh milk 1l");
+
+    // The user renames the product; the next receipt prints the same
+    // receipt-string, which no longer containment-matches the new name.
+    updateProduct(db, milk.id, { name: "Selected Dairy Milk 1 Liter" });
+    const trip2 = startTrip(db, { currency: "PHP", storeId: store.id });
+    addProductToTrip(db, { tripId: trip2.id, productId: milk.id, currency: "PHP", shelfPriceMinor: 12_000 });
+    const receipt2 = createReceiptWithLines(db, {
+      tripId: trip2.id,
+      storeId: store.id,
+      currency: "PHP",
+      lines: [
+        { lineType: "product", descriptionRaw: "NESTLE FRESH MILK 1L 125.00", descriptionCorrected: null, quantity: 1, unitPriceMinor: 12_500, lineTotalMinor: 12_500 },
+      ],
+    });
+
+    // Alias resolution still tied the line to the milk purchase: +5.00 over.
+    expect(receipt2.overchargeMinor).toBe(500);
   });
 });
