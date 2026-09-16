@@ -52,28 +52,91 @@ described in the technical requirements.
 
 ## What is implemented
 
-- Expo + TypeScript strict project bootstrapping
-- Six primary navigation tabs with placeholder screens
-- NativeWind theming with light/dark support
-- Zustand and TanStack Query providers wired up
-- Drizzle schema mirroring the backend tables (`categories`, `images`,
-  `stores`, `products`, `product_barcodes`, `prices`, `trips`, `receipts`,
-  `receipt_lines`, `purchases`, `shopping_lists`, `shopping_list_items`,
-  `sync_mutations`, `sync_meta`), each carrying the shared sync columns
-  (`id`, timestamps, `device_id`, `revision`, `sync_status`,
-  `field_versions_json`) plus indexes on commonly queried and synchronized
-  fields
-- Money stored as integer minor units with ISO currency code on every monetary
-  record (see `src/utils/money.ts`); image records persist local URI, remote
-  object key, thumbnail, MIME, dimensions, size, SHA-256, and upload status
-- Integer-minor-unit money parsing/formatting with unit tests
+- **Expo SDK 57** (React Native 0.86, React 19, New Architecture) with
+  TypeScript strict, ESLint (eslint-config-expo), and GitHub Actions CI
+  (typecheck / lint / jest)
+- Offline-first SQLite via `expo-sqlite` + Drizzle ORM: WAL, foreign keys,
+  versioned migration runner (`PRAGMA user_version`) over drizzle-kit SQL
+  embedded by `scripts/embed-migrations.mjs` (`npm run db:generate` then
+  `npm run db:embed` after schema changes)
+- Outbox tracking (`src/db/outbox.ts`): every insert/update/delete stamps the
+  shared sync columns (id, timestamps, `device_id`, `revision`,
+  `sync_status`, `field_versions_json`) and appends a `sync_mutations` row;
+  deletes are tombstones — the future sync engine only has to drain the outbox
+- Repositories for categories (with seeded defaults), stores, barcodes,
+  products (search / archive / detail / recent brands), prices, trips
+  (duplicate-scan quantity increments, complete/cancel, totals), shopping
+  lists (convert-to-trip), and image metadata
+- Barcode scanning with **expo-camera** (ML Kit on Android): scan lock +
+  resume, torch, manual-entry fallback; GTIN check-digit validation, UPC-E →
+  UPC-A expansion, and EAN-13 ↔ UPC-A alias bridging (`src/utils/barcode.ts`)
+- Capture flow: scan → known product quick card (last price) or manual product
+  capture (name-required form, searchable categories, recent brands, optional
+  compressed photo with SHA-256) → price capture (regular/promo/loyalty, tax
+  flag) → adds to the active trip and returns to the scanner loop
+- Image pipeline (`src/capture/images.ts`): expo-image-manipulator compression
+  + thumbnails, document-directory storage, byte-level SHA-256 — binaries
+  never enter SQLite
+- Shopping trips persisted in SQLite and reloaded on focus (survive app
+  kills), quantity steppers, running totals, complete/cancel
+- Lists (checklists with estimates, convert to trip), Library (search, price
+  history, unit prices, favorite/archive), History (completed trips),
+  Settings (default currency, pending-sync counter)
+- Money as integer minor units with ISO currency; unit-price math
+  (per 100 g / 100 mL / piece, multi-packs) — all pure utils under test
+- 50 tests: outbox semantics, barcode utils, trip lifecycle, app-kill
+  persistence on real files, list aggregates, money, unit prices
 
-## Not yet implemented (next phases)
+### Deviation from tech.mobile.md
 
-- Camera + barcode scanning (`react-native-vision-camera`, ML Kit)
+`react-native-vision-camera` v5 (Nitro rewrite) removed built-in barcode
+scanning, so the app uses **expo-camera** for scanning (ML Kit on Android,
+SDK-57-aligned, torch support). Revisit alongside the OCR milestone —
+`expo-mlkit-ocr` runs on stills and pairs with any camera library.
+
+## Pinned compatible versions
+
+| Package | Version | Notes |
+| --- | --- | --- |
+| expo | ^57.0.23 | SDK 57, RN 0.86.3, React 19.2.3 |
+| expo-camera | ~57.x | Barcode scanning (ML Kit), torch |
+| expo-sqlite / drizzle-orm | ~57.x / ^0.45.2 | Same schema runs on better-sqlite3 in jest |
+| react-native-reanimated | 4.5.1 | Requires react-native-worklets 0.10.1 (installed) |
+| nativewind | 4.2.7 | Tailwind **3.x only** (tailwindcss ^3.4.17) |
+| typescript | ~6.0.3 | SDK 57 pin |
+
+## Building the APK (EAS)
+
+```sh
+cd mobile
+npx eas-cli login              # once
+npx eas-cli build -p android --profile preview      # installable release APK
+npx eas-cli build -p android --profile development  # dev client APK for iteration
+```
+
+- Credentials: EAS-managed keystore (generated on first build)
+- `preview`/`development` produce `.apk`; `production` produces an `.aab` for
+  Play Store
+- Project: `genegulanes` under the `genegulanesjrs-team` account
+  (id `15bd877b-8763-4ff6-9189-f51a6ec41924`)
+
+### On-device validation checklist (spec)
+
+- [ ] Barcode acquisition feels instant (< 300 ms after focus) for EAN-13/8,
+      UPC-A/E; QR ignored unless valid
+- [ ] Scan known product → quick card shows last price; capture price → added
+      to trip; rescan same product → quantity increments
+- [ ] Scan unknown barcode → manual capture (name only required) → price
+- [ ] Trip survives force-kill and relaunch (active trip restored)
+- [ ] Full airplane-mode pass: scan, capture, complete trip, library/history
+      all work offline; pending-change counter grows
+- [ ] Record APK size and startup time; track between releases
+
+## Not yet implemented (next milestones)
+
 - OCR capture flow (`expo-mlkit-ocr`) with confirmation overlays
-- SQLite initialization, migrations, and repository layer via `expo-sqlite`
 - Receipt processing and price-comparison pipeline
 - Pull/push delta sync engine with last-write-wins conflict resolution
+  (outbox is already journaled) and the shared backend
 - Background tasks (`expo-task-manager`, `expo-background-task`)
 - E2E tests (Detox)
