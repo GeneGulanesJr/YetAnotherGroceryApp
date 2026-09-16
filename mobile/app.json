@@ -36,7 +36,13 @@
           }
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "YetAnotherGroceryApp can access your photo library to import product photos."
+        }
+      ]
     ]
   }
 }

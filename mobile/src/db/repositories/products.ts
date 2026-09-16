@@ -22,6 +22,7 @@ export interface ProductInput {
   unit?: string | null;
   notes?: string | null;
   barcode?: string | null;
+  photoImageId?: string | null;
 }
 
 export interface ProductUpdate {
@@ -45,7 +46,7 @@ export function createProduct(db: Db, input: ProductInput): Product {
       packageSize: input.packageSize?.trim() || null,
       unit: input.unit ?? null,
       notes: input.notes?.trim() || null,
-      photoImageId: null,
+      photoImageId: input.photoImageId ?? null,
       isFavorite: 0,
     });
     if (input.barcode !== null && input.barcode !== undefined && input.barcode !== "") {

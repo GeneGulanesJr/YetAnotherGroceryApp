@@ -6,6 +6,7 @@ import { StatusBar } from "expo-status-bar";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { RootNavigator } from "./src/navigation/RootNavigator";
+import { getDatabase } from "./src/db/database";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -17,6 +18,10 @@ const queryClient = new QueryClient({
 });
 
 export default function App() {
+  // Opens SQLite, applies migrations, and seeds defaults before any screen
+  // queries it (getDatabase is a synchronous singleton).
+  getDatabase();
+
   return (
     <QueryClientProvider client={queryClient}>
       <SafeAreaProvider>
