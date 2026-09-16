@@ -10,7 +10,8 @@ personal analytics to help users make smarter shopping decisions.
 | Path | What it is | Status |
 | --- | --- | --- |
 | `mobile/` | Expo (SDK 57) + React Native app — the data-capture surface | **Working core**: offline SQLite + barcode scanning + trips/lists/library; verified on device via Expo Go |
-| `web-desktop/` | Next.js 14 web app + Tauri 2 desktop shell — the analytics surface | **Data foundation live**: SQLite replica + SQL analytics via DataSource, dashboard wired; backend-dormant |
+| `web-desktop/` | Next.js 14 web app + Tauri 2 desktop shell — the analytics surface | **Data foundation live**: SQLite replica + SQL analytics via DataSource, dashboard wired, pull-sync + CSV exports |
+| `api/` | Shared sync + analytics backend (Fastify + Drizzle, file/libSQL) | **Dev-ready**: sync push/pull + analytics endpoints, 20 tests; deployment + Clerk auth pending |
 | `specs.md` | Functional/product specification | Stable |
 | `tech.mobile.md` | Mobile technical requirements (+ implementation status) | Source of truth for mobile |
 | `tech.desktop.md` | Web/desktop technical requirements | Design only |
@@ -52,6 +53,9 @@ fallback) live in [`mobile/README.md`](mobile/README.md).
 - [x] Desktop data foundation: local SQLite replica migrations, SQL
       analytics source (Tauri plugin-sql, tested on better-sqlite3), domain
       analytics module, live dashboard through the shared DataSource
-- [ ] Signed APK via EAS Build (config ready; build on demand)
-- [ ] Sync backend implementing `/sync/push` + `/sync/pull` (Turso)
+- [x] Sync backend (`api/`): push/pull delta sync with server revisions,
+      LWW, tombstones, idempotency + analytics endpoints matching the
+      desktop client contract — dev-ready, deployment pending
+- [ ] EAS builds (dev APK for OCR validation + signed preview APK) — on demand
+- [ ] Deploy backend + Clerk auth; end-to-end sync across surfaces
 - [ ] Background tasks, auth (Clerk), Detox E2E
