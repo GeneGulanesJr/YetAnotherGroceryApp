@@ -15,6 +15,13 @@
       "when": 1789574167270,
       "tag": "0001_ocr_price_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1789574839489,
+      "tag": "0002_sync_conflicts",
+      "breakpoints": true
     }
   ]
 }

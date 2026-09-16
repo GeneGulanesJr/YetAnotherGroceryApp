@@ -45,6 +45,9 @@ fallback) live in [`mobile/README.md`](mobile/README.md).
       matching, shelf-vs-receipt discrepancy and overcharge rollup
 - [x] Shopping trips (survive app kills), lists → trips, library, history
 - [x] Device-verified via Expo Go (OCR paths need a dev/custom build)
+- [x] Sync engine client: outbox push, cursor pull, field-level LWW,
+      conflict audit, backoff — tested against a mock transport; activates
+      automatically once `extra.apiBaseUrl` points at a backend
 - [ ] Signed APK via EAS Build (config ready; build on demand)
-- [ ] Sync engine + shared backend (Turso) with field-level LWW
+- [ ] Sync backend implementing `/sync/push` + `/sync/pull` (Turso)
 - [ ] Background tasks, auth (Clerk), Detox E2E

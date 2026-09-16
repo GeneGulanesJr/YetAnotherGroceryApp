@@ -375,6 +375,33 @@ export const syncMeta = sqliteTable("sync_meta", {
   updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
 });
 
+/**
+ * Local audit trail required by the sync spec (conflict resolution):
+ * every field-level conflict records both sides, the winner, and origins.
+ * Device-local; never synced.
+ */
+export const syncConflicts = sqliteTable(
+  "sync_conflicts",
+  {
+    id: text("id").primaryKey(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+    tableName: text("table_name").notNull(),
+    recordId: text("record_id").notNull(),
+    field: text("field").notNull(),
+    winningSide: text("winning_side", { enum: ["local", "server"] }).notNull(),
+    winningValueJson: text("winning_value_json"),
+    losingValueJson: text("losing_value_json"),
+    localRevision: integer("local_revision"),
+    remoteRevision: integer("remote_revision"),
+    localDeviceId: text("local_device_id"),
+    remoteDeviceId: text("remote_device_id"),
+  },
+  (table) => ({
+    recordIdx: index("sync_conflicts_record_idx").on(table.tableName, table.recordId),
+    createdIdx: index("sync_conflicts_created_idx").on(table.createdAt),
+  }),
+);
+
 export type Category = typeof categories.$inferSelect;
 export type ImageRecord = typeof images.$inferSelect;
 export type Store = typeof stores.$inferSelect;
@@ -389,3 +416,4 @@ export type ShoppingList = typeof shoppingLists.$inferSelect;
 export type ShoppingListItem = typeof shoppingListItems.$inferSelect;
 export type SyncMutation = typeof syncMutations.$inferSelect;
 export type SyncMeta = typeof syncMeta.$inferSelect;
+export type SyncConflict = typeof syncConflicts.$inferSelect;

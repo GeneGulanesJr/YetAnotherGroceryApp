@@ -1,15 +1,17 @@
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { newId, setDeviceId } from "./context";
+import { setMetaValue } from "./repositories/meta";
 import { runMigrations } from "./migrate";
 import * as schema from "./schema";
 import type { Db } from "./types";
 
 /**
  * Test-only database factory. Runs the exact same embedded migrations as the
- * app so repositories can be integration-tested in Node (spec: SQLite
- * integration fixtures). Only import from *.test.ts files — this module pulls
- * in better-sqlite3, which must never reach the Metro bundle.
+ * app and seeds the same bootstrap meta (device id, default currency) so the
+ * sync engine and repositories behave as on device. Only import from
+ * *.test.ts files — this module pulls in better-sqlite3, which must never
+ * reach the Metro bundle.
  */
 
 export function createTestDb(): Db {
@@ -25,6 +27,9 @@ function buildDb(sqlite: InstanceType<typeof Database>): Db {
   sqlite.pragma("foreign_keys = ON");
   const db = drizzle(sqlite, { schema }) as unknown as Db;
   runMigrations(db);
-  setDeviceId(newId());
+  const deviceId = newId();
+  setDeviceId(deviceId);
+  setMetaValue(db, "device_id", deviceId);
+  setMetaValue(db, "default_currency", "PHP");
   return db;
 }

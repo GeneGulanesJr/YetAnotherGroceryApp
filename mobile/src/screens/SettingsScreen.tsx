@@ -10,18 +10,23 @@ import {
   getPendingMutationCount,
   setDefaultCurrency,
 } from "../db/repositories/meta";
+import { useAppStore } from "../store/useAppStore";
+import { syncConfigured, syncNow } from "../sync/client";
 
 const CURRENCIES = ["PHP", "USD", "EUR", "GBP", "JPY", "SGD", "AUD", "CAD"] as const;
 
 export function SettingsScreen() {
   const [currency, setCurrency] = useState(() => getDefaultCurrency(getDatabase()));
   const [pending, setPending] = useState(() => getPendingMutationCount(getDatabase()));
+  const syncStatus = useAppStore((state) => state.syncStatus);
+  const lastSyncedAt = useAppStore((state) => state.lastSyncedAt);
+  const configured = syncConfigured();
 
-  const refreshPending = useCallback(
-    () => setPending(getPendingMutationCount(getDatabase())),
-    [],
+  useFocusEffect(
+    useCallback(() => {
+      setPending(getPendingMutationCount(getDatabase()));
+    }, []),
   );
-  useFocusEffect(refreshPending);
 
   const changeCurrency = (next: string) => {
     setDefaultCurrency(getDatabase(), next);
@@ -60,13 +65,29 @@ export function SettingsScreen() {
           <Text className="text-base text-slate-800 dark:text-slate-100">
             {pending} change{pending === 1 ? "" : "s"} waiting to sync
           </Text>
-          <Text className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            The sync backend ships in a later milestone. Every change is stored
-            offline and journaled in the outbox, so nothing is lost.
-          </Text>
-          <View className="mt-3 opacity-50">
-            <PrimaryButton label="Sync now (unavailable)" onPress={() => undefined} disabled />
-          </View>
+          {configured ? (
+            <>
+              <Text className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                Last sync:{" "}
+                {lastSyncedAt === null ? "never" : new Date(lastSyncedAt).toLocaleString()}
+                {syncStatus === "error" ? " · last run had errors" : ""}
+              </Text>
+              <View className="mt-3">
+                <PrimaryButton
+                  label={syncStatus === "syncing" ? "Syncing…" : "Sync now"}
+                  onPress={() => void syncNow()}
+                  loading={syncStatus === "syncing"}
+                  disabled={syncStatus === "syncing"}
+                />
+              </View>
+            </>
+          ) : (
+            <Text className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              No sync backend configured — everything stays on this device. The
+              sync engine is ready; set `extra.apiBaseUrl` in app.json (or via
+              EAS env) once the server ships.
+            </Text>
+          )}
         </View>
 
         <Text className="mt-8 text-xs text-slate-400">

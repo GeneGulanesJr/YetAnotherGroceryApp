@@ -91,10 +91,16 @@ described in the technical requirements.
 - Lists (checklists with estimates, convert to trip), Library (search, price
   history, unit prices, favorite/archive), History (completed trips),
   Settings (default currency, pending-sync counter)
+- **Sync engine (client)**: batched outbox push, cursor-based delta pull,
+  field-level last-write-wins with a `sync_conflicts` audit trail,
+  exponential backoff, idempotent runs, startup/foreground triggers and a
+  manual "Sync now" — fully tested against a mock transport. Dormant until
+  `extra.apiBaseUrl` is set (transport: `src/sync/transport.ts`).
 - Money as integer minor units with ISO currency; unit-price math
   (per 100 g / 100 mL / piece, multi-packs) — all pure utils under test
-- 50 tests: outbox semantics, barcode utils, trip lifecycle, app-kill
-  persistence on real files, list aggregates, money, unit prices
+- 82 tests: outbox semantics, barcode utils, trip lifecycle, app-kill
+  persistence on real files, list aggregates, receipts/discrepancies, LWW
+  merge, sync engine runs, money, unit prices
 
 ### Deviation from tech.mobile.md
 
@@ -167,8 +173,9 @@ npx eas-cli build -p android --profile development  # dev client APK for iterati
 
 ## Not yet implemented (next milestones)
 
-- Pull/push delta sync engine with last-write-wins conflict resolution
-  (outbox is already journaled) and the shared backend
+- The sync **backend** implementing `/sync/push` + `/sync/pull` over Turso
+  (set `extra.apiBaseUrl` in app.json or via EAS env when it ships; the
+  client is complete and tested)
 - Background tasks (`expo-task-manager`, `expo-background-task`)
 - Store-specific receipt alias learning (v1 matches by normalized names)
 - Auth (Clerk) and image upload to object storage

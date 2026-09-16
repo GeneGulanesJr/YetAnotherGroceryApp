@@ -23,7 +23,8 @@
     "extra": {
       "eas": {
         "projectId": "15bd877b-8763-4ff6-9189-f51a6ec41924"
-      }
+      },
+      "apiBaseUrl": ""
     },
     "owner": "genegulanesjrs-team",
     "plugins": [

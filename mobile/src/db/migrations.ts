@@ -103,5 +103,13 @@ export const migrations: EmbeddedMigration[] = [
       "ALTER TABLE `prices` ADD `ocr_raw_text` text;",
       "ALTER TABLE `prices` ADD `ocr_confidence` real;"
     ]
+  },
+  {
+    id: "0002_sync_conflicts",
+    statements: [
+      "CREATE TABLE `sync_conflicts` (\n\t`id` text PRIMARY KEY NOT NULL,\n\t`created_at` integer NOT NULL,\n\t`table_name` text NOT NULL,\n\t`record_id` text NOT NULL,\n\t`field` text NOT NULL,\n\t`winning_side` text NOT NULL,\n\t`winning_value_json` text,\n\t`losing_value_json` text,\n\t`local_revision` integer,\n\t`remote_revision` integer,\n\t`local_device_id` text,\n\t`remote_device_id` text\n);",
+      "CREATE INDEX `sync_conflicts_record_idx` ON `sync_conflicts` (`table_name`,`record_id`);",
+      "CREATE INDEX `sync_conflicts_created_idx` ON `sync_conflicts` (`created_at`);"
+    ]
   }
 ];

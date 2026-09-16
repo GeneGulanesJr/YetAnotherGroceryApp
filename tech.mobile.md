@@ -45,8 +45,17 @@ requirements below remain the target design.
   header/footer by position, quantity extraction) → transactional save
   (`createReceiptWithLines`) → normalized-name matching against the trip's
   purchases with per-line shelf-vs-receipt discrepancy and overcharge rollup.
-* Still pending from this document: sync engine + backend, background
-  tasks, auth, Detox E2E, store-specific receipt aliases learning.
+* **Sync engine (client side) is implemented** against the protocol below:
+  batched outbox push, cursor-based delta pull, exponential backoff with
+  attempt gating, idempotent runs, field-level LWW application, and a local
+  `sync_conflicts` audit table (migration 0002) — all integration-tested
+  against a mock transport (`src/sync/`). The fetch transport activates from
+  `app.json` `extra.apiBaseUrl`; while unset, sync reports "unconfigured"
+  and the app stays purely offline. Startup + foreground-resume triggers are
+  wired; the Settings screen exposes manual "Sync now" with pending counts.
+* Still pending from this document: the backend that implements
+  `/sync/push` + `/sync/pull` (Turso), background tasks, auth, Detox E2E,
+  store-specific receipt aliases learning.
 
 ---
 
