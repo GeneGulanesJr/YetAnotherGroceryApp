@@ -88,35 +88,45 @@ surfaces described in the technical requirements.
 - App shell with sidebar navigation and five primary sections
 - Tailwind + shadcn/ui theming with light/dark mode (next-themes)
 - TanStack Query and Zustand providers wired up
-- Spending dashboard placeholder with summary stat cards + a Recharts chart
-- Drizzle schema mirroring the backend tables (`categories`, `images`,
-  `stores`, `products`, `product_barcodes`, `prices`, `trips`, `receipts`,
-  `receipt_lines`, `purchases`, `shopping_lists`, `shopping_list_items`,
-  `sync_mutations`, `sync_meta`), each carrying the shared sync columns
-  (`id`, timestamps, `device_id`, `revision`, `sync_status`) plus indexes on
-  commonly queried and synchronized fields — so the desktop SQLite replica can
-  apply the same delta-sync payloads as mobile
-- Desktop analytics rollups (`daily_spending_rollups`,
-  `monthly_spending_rollups`, `product_price_rollups`,
-  `store_product_price_rollups`, `category_spending_rollups`,
-  `receipt_savings_rollups`) maintained in code and rebuildable from canonical
-  records, per `tech.desktop.md`
+- **Live spending dashboard**: summary stat cards, daily/weekly/monthly
+  series chart, spending-by-store and by-category breakdowns, and a price
+  watch table (latest/average/range/trend with at-low/at-high flags) — all
+  read through the shared `DataSource` with loading, empty, and error states
+  and a range filter
+- **Analytics read layer** with three interchangeable sources selected in
+  one place (`resolveDataSource`):
+  - `DesktopSqliteDataSource` — local SQLite replica via Tauri `plugin-sql`,
+    aggregations computed in SQL (summary, bucketed series, per-store /
+    per-category joins, window-function price statistics); runs the same
+    embedded migrations as mobile (`user_version` runner over `drizzle/*.sql`,
+    embedded by `scripts/embed-migrations.mjs`); integration-tested against
+    better-sqlite3 with the exact same SQL
+  - `ApiDataSource` — typed client for the future backend analytics
+    endpoints (`NEXT_PUBLIC_API_BASE_URL`, dormant while unset)
+  - `PlaceholderDataSource` — empty states before any backend exists
+- Domain analytics calculations in `src/domain/analytics.ts` (pure,
+  per-currency, integer minor units): spending summaries, ISO-week/day/month
+  bucketing, store/category breakdowns, price statistics with trend and
+  at-extreme flags
+- Drizzle schema mirroring the backend tables, including
+  `field_versions_json` on every synced record (parity with mobile restored)
+  and analytics rollup tables, per `tech.desktop.md`
 - Money stored as integer minor units with an ISO currency code on every
-  monetary record (see `src/lib/money.ts`); image records persist local URI,
-  remote object key, thumbnail, MIME, dimensions, size, SHA-256, and upload
-  status
-- Shared `DataSource` interface so web (API) and desktop (SQLite) targets share
-  dashboard components
-- Integer-minor-unit money parsing/formatting utilities with unit tests
+  monetary record (see `src/lib/money.ts`)
+- 26 Vitest tests: money utils, domain analytics, desktop SQL source over
+  better-sqlite3 fixtures
 - Tauri 2 wrapper with `plugin-sql`, `plugin-fs`, and `plugin-dialog` registered
   behind a least-privilege capability
+- CI: typecheck, lint, tests, and **both** target builds (web + static
+  export) on every PR
 
 ## Not yet implemented (next phases)
 
-- Typed backend API client (`packages/api-client`) and real dashboard data
+- The backend itself (analytics endpoints + `/sync/push` + `/sync/pull`);
+  `ApiDataSource` documents the contract and is dormant until then
 - Clerk authentication (`@clerk/nextjs`) and protected routes
-- Optional local SQLite replica + pull/push delta sync for offline desktop
-- Full analytics (product/store/category/price-intelligence/savings)
-- TanStack Table data tables, search, and report exports (CSV/Excel/PDF)
-- Backend rollup maintenance jobs and migration runner
+- Desktop write path: delta-sync engine over the local replica (the mobile
+  protocol and engine are the reference implementation)
+- Rollup maintenance jobs, TanStack Table data tables, search, and report
+  exports (CSV/Excel/PDF)
 - Playwright E2E and component tests

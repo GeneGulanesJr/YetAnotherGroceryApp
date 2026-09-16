@@ -4,7 +4,9 @@ import { index, integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core
 // the backend, and the optional desktop SQLite replica so the delta-sync
 // protocol is consistent across every surface (see tech.desktop.md,
 // "Desktop offline data access"). Every synchronized record carries:
-// id, created_at, updated_at, deleted_at, device_id, revision, sync_status.
+// id, created_at, updated_at, deleted_at, device_id, revision, sync_status,
+// field_versions_json (per-field LWW version map — kept identical to the
+// mobile schema; the earlier desktop copy had drifted and missed it).
 export const syncColumns = {
   id: text("id").primaryKey(),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
@@ -15,6 +17,7 @@ export const syncColumns = {
   syncStatus: text("sync_status", {
     enum: ["pending", "synced", "error"],
   }).notNull(),
+  fieldVersionsJson: text("field_versions_json"),
 };
 
 // The canonical tables below mirror the shared backend / mobile schema so the

@@ -10,7 +10,7 @@ personal analytics to help users make smarter shopping decisions.
 | Path | What it is | Status |
 | --- | --- | --- |
 | `mobile/` | Expo (SDK 57) + React Native app — the data-capture surface | **Working core**: offline SQLite + barcode scanning + trips/lists/library; verified on device via Expo Go |
-| `web-desktop/` | Next.js 14 web app + Tauri 2 desktop shell — the analytics surface | Scaffold (placeholder dashboards) |
+| `web-desktop/` | Next.js 14 web app + Tauri 2 desktop shell — the analytics surface | **Data foundation live**: SQLite replica + SQL analytics via DataSource, dashboard wired; backend-dormant |
 | `specs.md` | Functional/product specification | Stable |
 | `tech.mobile.md` | Mobile technical requirements (+ implementation status) | Source of truth for mobile |
 | `tech.desktop.md` | Web/desktop technical requirements | Design only |
@@ -48,6 +48,10 @@ fallback) live in [`mobile/README.md`](mobile/README.md).
 - [x] Sync engine client: outbox push, cursor pull, field-level LWW,
       conflict audit, backoff — tested against a mock transport; activates
       automatically once `extra.apiBaseUrl` points at a backend
+- [x] Receipt alias learning (store-scoped) + background sync task
+- [x] Desktop data foundation: local SQLite replica migrations, SQL
+      analytics source (Tauri plugin-sql, tested on better-sqlite3), domain
+      analytics module, live dashboard through the shared DataSource
 - [ ] Signed APK via EAS Build (config ready; build on demand)
 - [ ] Sync backend implementing `/sync/push` + `/sync/pull` (Turso)
 - [ ] Background tasks, auth (Clerk), Detox E2E
