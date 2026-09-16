@@ -33,9 +33,20 @@ requirements below remain the target design.
 * **Client ids** are v4 UUIDs generated locally (no `uuid` package — its ESM
   build dereferences the global `crypto` object, which Hermes does not
   provide).
-* Still pending from this document: OCR capture flow, receipt processing,
-  sync engine + backend, background tasks, EAS release automation beyond the
-  configured profiles.
+* **OCR capture flow is implemented** (`expo-mlkit-ocr` 0.2.7, pinned):
+  shelf-tag photo → on-device OCR → tap-to-confirm overlay
+  (`OCRTextOverlay`) → ranked price candidates (`priceParse.ts`, tested) →
+  price capture stores raw OCR text, confidence, and the source image.
+  A tested coordinate-transform layer (`transform.ts`) backs overlay math.
+  OCR runs only in development/custom builds — in Expo Go the flow degrades
+  to manual entry.
+* **Receipt verification v1**: receipt photo → OCR → classified editable
+  lines (`receiptParse.ts`: product/total/subtotal/tax/discount/payment,
+  header/footer by position, quantity extraction) → transactional save
+  (`createReceiptWithLines`) → normalized-name matching against the trip's
+  purchases with per-line shelf-vs-receipt discrepancy and overcharge rollup.
+* Still pending from this document: sync engine + backend, background
+  tasks, auth, Detox E2E, store-specific receipt aliases learning.
 
 ---
 

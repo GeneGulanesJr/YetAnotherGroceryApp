@@ -40,10 +40,11 @@ fallback) live in [`mobile/README.md`](mobile/README.md).
       outbox + tombstones (every write journaled for sync)
 - [x] Capture flow: barcode scanning (expo-camera/ML Kit), manual product
       capture, price capture, duplicate-scan handling
+- [x] OCR price capture (`expo-mlkit-ocr`) with tap-to-confirm overlay
+- [x] Receipt v1: OCR line classification, editable confirmation, trip
+      matching, shelf-vs-receipt discrepancy and overcharge rollup
 - [x] Shopping trips (survive app kills), lists → trips, library, history
-- [x] Device-verified via Expo Go
+- [x] Device-verified via Expo Go (OCR paths need a dev/custom build)
 - [ ] Signed APK via EAS Build (config ready; build on demand)
-- [ ] OCR price capture (`expo-mlkit-ocr`) with confirmation overlays
-- [ ] Receipt processing and price-comparison pipeline
 - [ ] Sync engine + shared backend (Turso) with field-level LWW
 - [ ] Background tasks, auth (Clerk), Detox E2E

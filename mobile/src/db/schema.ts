@@ -149,6 +149,10 @@ export const prices = sqliteTable(
     taxIncluded: integer("tax_included"),
     capturedAt: integer("captured_at", { mode: "timestamp_ms" }).notNull(),
     sourceImageId: text("source_image_id").references(() => images.id),
+    // OCR provenance per the capture-flow spec: raw value, confidence; the
+    // user-confirmed value lands in the *_price_minor columns above.
+    ocrRawText: text("ocr_raw_text"),
+    ocrConfidence: real("ocr_confidence"),
   },
   (table) => ({
     productIdIdx: index("prices_product_id_idx").on(table.productId),

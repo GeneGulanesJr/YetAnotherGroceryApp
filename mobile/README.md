@@ -74,6 +74,15 @@ described in the technical requirements.
   capture (name-required form, searchable categories, recent brands, optional
   compressed photo with SHA-256) → price capture (regular/promo/loyalty, tax
   flag) → adds to the active trip and returns to the scanner loop
+- **OCR shelf-price capture**: photograph the tag → on-device ML Kit OCR →
+  overlay with ranked price candidates (currency-marked decimals, comma
+  decimals, marked integers, OCR digit-confusion repair) → confirmed value
+  carries raw text + confidence + source image into the price record
+- **Receipt verification v1**: photograph the receipt → OCR → classified
+  editable lines (product/total/subtotal/tax/discount/payment; header/footer
+  by position; quantity parsing) → transactional save with normalized-name
+  matching to the trip's purchases → per-line shelf-vs-receipt discrepancy
+  and overcharge rollup surfaced in the trip summary and History
 - Image pipeline (`src/capture/images.ts`): expo-image-manipulator compression
   + thumbnails, document-directory storage, byte-level SHA-256 — binaries
   never enter SQLite
@@ -99,7 +108,8 @@ SDK-57-aligned, torch support). Revisit alongside the OCR milestone —
 | Package | Version | Notes |
 | --- | --- | --- |
 | expo | ^57.0.23 | SDK 57, RN 0.86.3, React 19.2.3 |
-| expo-camera | ~57.x | Barcode scanning (ML Kit), torch |
+| expo-camera | ~57.x | Barcode scanning (ML Kit), torch, still capture |
+| expo-mlkit-ocr | 0.2.7 | On-device ML Kit text recognition; dev builds only (Expo Go falls back to manual entry) |
 | expo-sqlite / drizzle-orm | ~57.x / ^0.45.2 | Same schema runs on better-sqlite3 in jest |
 | react-native-reanimated | 4.5.1 | Requires react-native-worklets 0.10.1 (installed) |
 | nativewind | 4.2.7 | Tailwind **3.x only** (tailwindcss ^3.4.17) |
@@ -157,9 +167,9 @@ npx eas-cli build -p android --profile development  # dev client APK for iterati
 
 ## Not yet implemented (next milestones)
 
-- OCR capture flow (`expo-mlkit-ocr`) with confirmation overlays
-- Receipt processing and price-comparison pipeline
 - Pull/push delta sync engine with last-write-wins conflict resolution
   (outbox is already journaled) and the shared backend
 - Background tasks (`expo-task-manager`, `expo-background-task`)
+- Store-specific receipt alias learning (v1 matches by normalized names)
+- Auth (Clerk) and image upload to object storage
 - E2E tests (Detox)

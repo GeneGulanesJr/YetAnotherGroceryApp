@@ -21,8 +21,9 @@ type PriceType = "regular" | "promotional" | "loyalty";
  * increments the quantity (spec).
  */
 export function PriceCaptureScreen({ navigation, route }: PriceCaptureProps) {
-  const { productId, barcode } = route.params;
-  const [amount, setAmount] = useState("");
+  const { productId, barcode, prefillAmount, ocrRawText, ocrConfidence, sourceImageId } =
+    route.params;
+  const [amount, setAmount] = useState(prefillAmount ?? "");
   const [priceType, setPriceType] = useState<PriceType>("regular");
   const [taxIncluded, setTaxIncluded] = useState(true);
   const currency = getDefaultCurrency(getDatabase());
@@ -52,6 +53,9 @@ export function PriceCaptureScreen({ navigation, route }: PriceCaptureProps) {
         expectedCheckoutPriceMinor: money.amountMinor,
         taxIncluded,
         capturedAt: new Date(),
+        sourceImageId: sourceImageId ?? null,
+        ocrRawText: ocrRawText ?? null,
+        ocrConfidence: ocrConfidence ?? null,
       });
 
       let addedToTrip = false;

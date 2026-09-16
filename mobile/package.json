@@ -28,6 +28,7 @@
     "expo-haptics": "~57.0.3",
     "expo-image-manipulator": "~57.0.18",
     "expo-image-picker": "~57.0.18",
+    "expo-mlkit-ocr": "^0.2.7",
     "expo-sqlite": "~57.0.3",
     "expo-status-bar": "~57.0.1",
     "js-sha256": "^1.0.0",

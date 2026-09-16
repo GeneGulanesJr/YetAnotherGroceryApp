@@ -16,6 +16,8 @@ export interface PriceInput {
   taxIncluded?: boolean | null;
   sourceImageId?: string | null;
   capturedAt?: Date;
+  ocrRawText?: string | null;
+  ocrConfidence?: number | null;
 }
 
 export function recordPrice(db: Db, input: PriceInput): Price {
@@ -33,6 +35,8 @@ export function recordPrice(db: Db, input: PriceInput): Price {
     taxIncluded: input.taxIncluded === null || input.taxIncluded === undefined ? null : (input.taxIncluded ? 1 : 0),
     capturedAt: input.capturedAt ?? now(),
     sourceImageId: input.sourceImageId ?? null,
+    ocrRawText: input.ocrRawText ?? null,
+    ocrConfidence: input.ocrConfidence ?? null,
   });
 }
 

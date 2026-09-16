@@ -96,5 +96,12 @@ export const migrations: EmbeddedMigration[] = [
       "CREATE INDEX `trips_deleted_at_idx` ON `trips` (`deleted_at`);",
       "CREATE INDEX `trips_sync_status_idx` ON `trips` (`sync_status`);"
     ]
+  },
+  {
+    id: "0001_ocr_price_columns",
+    statements: [
+      "ALTER TABLE `prices` ADD `ocr_raw_text` text;",
+      "ALTER TABLE `prices` ADD `ocr_confidence` real;"
+    ]
   }
 ];

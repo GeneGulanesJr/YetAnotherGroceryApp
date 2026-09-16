@@ -151,7 +151,12 @@ export function ProductResolveScreen({ navigation, route }: ResolveProps) {
 
       <View className="mt-auto gap-3">
         <PrimaryButton
-          label="Capture price"
+          label="Photograph price tag"
+          onPress={() => navigation.navigate("PriceTag", { productId: product.id })}
+        />
+        <PrimaryButton
+          label="Type price instead"
+          variant="secondary"
           onPress={() =>
             navigation.navigate("PriceCapture", {
               productId: product.id,

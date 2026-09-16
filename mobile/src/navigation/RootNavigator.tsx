@@ -4,7 +4,9 @@ import { useColorScheme } from "react-native";
 
 import { ManualProductScreen } from "../screens/ManualProductScreen";
 import { PriceCaptureScreen } from "../screens/PriceCaptureScreen";
+import { PriceTagScreen } from "../screens/PriceTagScreen";
 import { ProductResolveScreen } from "../screens/ProductResolveScreen";
+import { ReceiptCaptureScreen } from "../screens/ReceiptCaptureScreen";
 import { ScannerScreen } from "../screens/ScannerScreen";
 import { MainTabs } from "./MainTabs";
 import type { RootStackParamList } from "./types";
@@ -42,6 +44,16 @@ export function RootNavigator() {
           name="PriceCapture"
           component={PriceCaptureScreen}
           options={{ title: "Capture price" }}
+        />
+        <Stack.Screen
+          name="PriceTag"
+          component={PriceTagScreen}
+          options={{ headerShown: false, presentation: "fullScreenModal" }}
+        />
+        <Stack.Screen
+          name="ReceiptCapture"
+          component={ReceiptCaptureScreen}
+          options={{ title: "Receipt", headerShown: false, presentation: "fullScreenModal" }}
         />
       </Stack.Navigator>
     </NavigationContainer>

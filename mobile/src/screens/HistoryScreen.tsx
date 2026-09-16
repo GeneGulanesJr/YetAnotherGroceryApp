@@ -6,6 +6,7 @@ import { ScreenContainer } from "../components/ScreenContainer";
 import { EmptyState, PrimaryButton } from "../components/ui";
 import { getDatabase } from "../db/database";
 import { getDefaultCurrency } from "../db/repositories/meta";
+import { listReceipts, type ReceiptSummaryLine } from "../db/repositories/receipts";
 import {
   getTripPurchases,
   listTrips,
@@ -17,12 +18,15 @@ export function HistoryScreen() {
   const [trips, setTrips] = useState<TripSummaryLine[]>(() =>
     listTrips(getDatabase(), { status: "completed" }),
   );
+  const [receipts, setReceipts] = useState<ReceiptSummaryLine[]>(() =>
+    listReceipts(getDatabase()),
+  );
   const [openTrip, setOpenTrip] = useState<TripSummaryLine | null>(null);
 
-  const refresh = useCallback(
-    () => setTrips(listTrips(getDatabase(), { status: "completed" })),
-    [],
-  );
+  const refresh = useCallback(() => {
+    setTrips(listTrips(getDatabase(), { status: "completed" }));
+    setReceipts(listReceipts(getDatabase()));
+  }, []);
   useFocusEffect(refresh);
 
   const currency = trips[0]?.currency ?? getDefaultCurrency(getDatabase());
@@ -71,6 +75,44 @@ export function HistoryScreen() {
             </Pressable>
           )}
         />
+
+        <Text className="mt-6 text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+          Receipts
+        </Text>
+        {receipts.length === 0 ? (
+          <Text className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            Attach a receipt photo from an active trip to verify prices against
+            what you recorded on the shelf.
+          </Text>
+        ) : (
+          <View className="mt-2">
+            {receipts.map((receipt) => (
+              <View
+                key={receipt.id}
+                className="mb-2 flex-row items-center justify-between rounded-2xl bg-slate-100 px-4 py-3 dark:bg-slate-800"
+              >
+                <View className="flex-1">
+                  <Text className="text-base text-slate-900 dark:text-slate-50">
+                    {receipt.capturedAt?.toLocaleDateString() ?? "Receipt"} ·{" "}
+                    {receipt.lineCount} lines
+                  </Text>
+                  {receipt.overchargeMinor !== null && receipt.overchargeMinor > 0 ? (
+                    <Text className="text-xs font-semibold text-rose-600 dark:text-rose-400">
+                      ⚠ {(receipt.overchargeMinor / 100).toFixed(2)} over recorded shelf
+                      prices
+                    </Text>
+                  ) : null}
+                </View>
+                <Text className="font-semibold text-slate-700 dark:text-slate-200">
+                  {formatMoney({
+                    amountMinor: receipt.totalMinor ?? 0,
+                    currency: receipt.currency,
+                  })}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
 
         <Text className="mt-2 text-center text-xs text-slate-400">
           Receipts and discrepancy reports arrive with the OCR milestone.

@@ -222,6 +222,13 @@ export function ShoppingScreen({ navigation }: { navigation: ShoppingNavigation 
           </Text>
           <View className="mt-3 gap-3">
             <PrimaryButton label="Scan next item" onPress={() => navigation.navigate("Scanner")} />
+            <PrimaryButton
+              label="Attach receipt photo"
+              variant="secondary"
+              onPress={() =>
+                navigation.navigate("ReceiptCapture", { tripId: view.trip?.id })
+              }
+            />
             <View className="flex-row gap-3">
               <View className="flex-1">
                 <PrimaryButton label="Complete trip" onPress={finishTrip} />
