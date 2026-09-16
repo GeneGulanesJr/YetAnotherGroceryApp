@@ -23,6 +23,8 @@ export function getDatabase(): Db {
   }
 
   const sqlite = openDatabaseSync("yaga.db");
+  // One statement per execSync call — the native prepare step rejects
+  // multi-statement strings on some Android versions.
   sqlite.execSync("PRAGMA journal_mode = WAL;");
   sqlite.execSync("PRAGMA foreign_keys = ON;");
 

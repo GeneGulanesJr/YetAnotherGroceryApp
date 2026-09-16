@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { FlatList, Modal, Pressable, Text, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -59,8 +59,8 @@ export function ShoppingScreen({ navigation }: { navigation: ShoppingNavigation 
     null,
   );
 
-  const refresh = () => setView(loadView());
-
+  // Stable identity or useFocusEffect re-runs every render (update loop).
+  const refresh = useCallback(() => setView(loadView()), []);
   useFocusEffect(refresh);
 
   const finishTrip = () => {

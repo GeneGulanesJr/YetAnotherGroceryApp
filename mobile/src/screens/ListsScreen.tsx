@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Alert, FlatList, Modal, Pressable, Text, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -28,7 +28,7 @@ export function ListsScreen({ navigation }: { navigation: ListsNavigation }) {
   const [createOpen, setCreateOpen] = useState(false);
   const [openListId, setOpenListId] = useState<string | null>(null);
 
-  const refresh = () => setLists(listLists(getDatabase()));
+  const refresh = useCallback(() => setLists(listLists(getDatabase())), []);
   useFocusEffect(refresh);
 
   const openList = lists.find((l) => l.id === openListId) ?? null;

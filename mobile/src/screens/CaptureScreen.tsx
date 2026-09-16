@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Text, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -16,11 +16,11 @@ export function CaptureScreen({ navigation }: { navigation: CaptureNavigation })
   const [manualBarcode, setManualBarcode] = useState("");
   const [pending, setPending] = useState(0);
 
-  useFocusEffect(() => {
-    // Recompute the pending-change badge when the tab gains focus;
-    // navigation focus is not derivable during render.
-    setPending(getPendingMutationCount(getDatabase()));
-  });
+  const refreshPending = useCallback(
+    () => setPending(getPendingMutationCount(getDatabase())),
+    [],
+  );
+  useFocusEffect(refreshPending);
 
   const manualError =
     manualBarcode.trim() !== "" && !isProbablyBarcode(manualBarcode.trim())

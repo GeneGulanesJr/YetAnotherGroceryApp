@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { FlatList, Modal, Pressable, Text, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -28,7 +28,10 @@ export function LibraryScreen({ navigation }: { navigation: LibraryNavigation })
   );
   const [detail, setDetail] = useState<ProductDetail | null>(null);
 
-  const refresh = () => setProducts(searchProducts(getDatabase(), query));
+  const refresh = useCallback(
+    () => setProducts(searchProducts(getDatabase(), query)),
+    [query],
+  );
   useFocusEffect(refresh);
 
   const runSearch = (value: string) => {

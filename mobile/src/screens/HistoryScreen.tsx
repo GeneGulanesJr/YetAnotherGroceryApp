@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { FlatList, Modal, Pressable, Text, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 
@@ -19,7 +19,10 @@ export function HistoryScreen() {
   );
   const [openTrip, setOpenTrip] = useState<TripSummaryLine | null>(null);
 
-  const refresh = () => setTrips(listTrips(getDatabase(), { status: "completed" }));
+  const refresh = useCallback(
+    () => setTrips(listTrips(getDatabase(), { status: "completed" })),
+    [],
+  );
   useFocusEffect(refresh);
 
   const currency = trips[0]?.currency ?? getDefaultCurrency(getDatabase());

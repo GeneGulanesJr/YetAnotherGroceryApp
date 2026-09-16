@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Alert, Pressable, Text, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 
@@ -17,9 +17,11 @@ export function SettingsScreen() {
   const [currency, setCurrency] = useState(() => getDefaultCurrency(getDatabase()));
   const [pending, setPending] = useState(() => getPendingMutationCount(getDatabase()));
 
-  useFocusEffect(() => {
-    setPending(getPendingMutationCount(getDatabase()));
-  });
+  const refreshPending = useCallback(
+    () => setPending(getPendingMutationCount(getDatabase())),
+    [],
+  );
+  useFocusEffect(refreshPending);
 
   const changeCurrency = (next: string) => {
     setDefaultCurrency(getDatabase(), next);
