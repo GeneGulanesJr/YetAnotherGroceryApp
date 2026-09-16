@@ -105,6 +105,29 @@ SDK-57-aligned, torch support). Revisit alongside the OCR milestone —
 | nativewind | 4.2.7 | Tailwind **3.x only** (tailwindcss ^3.4.17) |
 | typescript | ~6.0.3 | SDK 57 pin |
 
+## Running on a device (Expo Go, no build required)
+
+The app has no third-party native modules, so it runs directly in Expo Go:
+
+```sh
+npx expo start          # phone on the same Wi-Fi
+```
+
+In Expo Go choose **"Enter URL manually"** and use `exp://<your-LAN-IP>:8081`
+(find the IP with `ip -4 addr show`).
+
+Networking notes learned on-device:
+
+- **Linux firewall**: if connecting times out silently, Metro is likely being
+  firewalled — `sudo ufw allow 8081/tcp` (ufw default-deny drops it).
+- **Different network / mobile data**: `npx expo start --tunnel` (needs the
+  `@expo/ngrok` dev dependency, already installed) publishes an
+  `exp://…exp.direct` URL that works from anywhere.
+- Device errors (red screens, native crashes) stream into the Metro terminal
+  log — keep it visible while testing.
+- One statement per `sqlite.execSync()` call — Android's native prepare step
+  rejects multi-statement strings.
+
 ## Building the APK (EAS)
 
 ```sh

@@ -7,6 +7,38 @@ desktop application also reads from.
 
 ---
 
+## Implementation Status (2026-09)
+
+Implemented on the `feat/mobile-core-capture-mvp` branch; verified on a physical
+Android device via Expo Go. This section records decisions and deviations; the
+requirements below remain the target design.
+
+* **Expo SDK 57** baseline (React Native 0.86, React 19, New Architecture,
+  TypeScript ~6.0.3). Pinned compatible versions are documented in
+  `mobile/README.md`.
+* **Barcode scanning uses `expo-camera`, not `react-native-vision-camera`.**
+  VisionCamera v5 (Nitro rewrite) removed the built-in `codeScanner` this
+  document assumed, and v4 predates RN 0.86. expo-camera provides ML Kit
+  barcode recognition on Android within the officially supported SDK surface.
+  Revisit alongside the OCR milestone — `expo-mlkit-ocr` runs on still images
+  and pairs with any camera library.
+* **Local database is live**: `expo-sqlite` + Drizzle, WAL + foreign keys, a
+  versioned migration runner (SQLite `user_version`) over drizzle-kit SQL
+  embedded into the bundle (`scripts/embed-migrations.mjs`), so device and
+  jest (better-sqlite3 fixtures) execute identical migrations.
+* **Outbox implemented from day one**: `src/db/outbox.ts` stamps the sync
+  columns and appends a `sync_mutations` row for every insert/update/delete
+  (deletes are tombstones), exactly as the sync engine section requires. The
+  sync client only has to drain the outbox once the backend exists.
+* **Client ids** are v4 UUIDs generated locally (no `uuid` package — its ESM
+  build dereferences the global `crypto` object, which Hermes does not
+  provide).
+* Still pending from this document: OCR capture flow, receipt processing,
+  sync engine + backend, background tasks, EAS release automation beyond the
+  configured profiles.
+
+---
+
 ## Platform Strategy
 
 * Cross-platform single codebase targeting **Android** and **iOS**.
