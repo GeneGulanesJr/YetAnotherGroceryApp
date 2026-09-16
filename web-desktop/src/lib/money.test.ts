@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { addMoney, formatMoney, parseMoney } from "./money";
+import { addMoney, formatMoney, formatMoneyCompact, parseMoney } from "./money";
 
 describe("parseMoney", () => {
   it("parses simple decimal amounts into minor units", () => {
@@ -47,6 +47,22 @@ describe("formatMoney", () => {
 
   it("formats whole values", () => {
     expect(formatMoney({ amountMinor: 1000, currency: "USD" })).toBe("$10.00");
+  });
+});
+
+describe("formatMoneyCompact", () => {
+  it("derives the value from minor units, not major units", () => {
+    // 3050 minor units == 30.50 major, so the compact label must NOT be "3.1K".
+    expect(formatMoneyCompact({ amountMinor: 3050, currency: "USD" })).not.toMatch(/K|M/);
+    expect(formatMoneyCompact({ amountMinor: 3050, currency: "USD" })).toBe("$30.5");
+  });
+
+  it("compacts large minor-unit values", () => {
+    // 12,500,000 minor units == 125,000 major -> compact "125K" (never "12.5M",
+    // which would mean minor units were treated as major units).
+    const out = formatMoneyCompact({ amountMinor: 12_500_000, currency: "USD" });
+    expect(out).toMatch(/^\$125(?:\.0)?K$/);
+    expect(out).not.toMatch(/M/);
   });
 });
 

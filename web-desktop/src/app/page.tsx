@@ -15,13 +15,13 @@ const summary = {
 };
 
 const series = [
-  { day: "Mon", amount: 980 },
-  { day: "Tue", amount: 1340 },
-  { day: "Wed", amount: 760 },
-  { day: "Thu", amount: 2100 },
-  { day: "Fri", amount: 1820 },
-  { day: "Sat", amount: 3050 },
-  { day: "Sun", amount: 1240 },
+  { day: "Mon", amountMinor: 980 },
+  { day: "Tue", amountMinor: 1340 },
+  { day: "Wed", amountMinor: 760 },
+  { day: "Thu", amountMinor: 2100 },
+  { day: "Fri", amountMinor: 1820 },
+  { day: "Sat", amountMinor: 3050 },
+  { day: "Sun", amountMinor: 1240 },
 ];
 
 export default function DashboardPage() {
