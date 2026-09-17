@@ -1,3 +1,4 @@
+import { getApiAuthToken } from "@/lib/auth-token";
 import { migrations } from "@/db/migrations";
 
 /**
@@ -115,7 +116,10 @@ export class ApiDataSource implements DataSource {
       params.set("currency", filters.currency);
     }
     const query = params.size > 0 ? `?${params.toString()}` : "";
-    const response = await fetch(`${this.baseUrl}${path}${query}`);
+    const token = await getApiAuthToken();
+    const response = await fetch(`${this.baseUrl}${path}${query}`, {
+      headers: token !== null ? { authorization: `Bearer ${token}` } : undefined,
+    });
     if (!response.ok) {
       throw new Error(`API ${path} failed: HTTP ${response.status}`);
     }

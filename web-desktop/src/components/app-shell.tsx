@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import { LayoutDashboard, Menu, Package, Settings, ShoppingCart, Store, X, FileText } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { AuthControls } from "@/components/auth-controls";
 import { useAppStore } from "@/store/useAppStore";
 
 const navItems = [
@@ -84,6 +85,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Menu className="h-5 w-5" />
           </button>
           <h1 className="text-sm font-medium text-muted-foreground">Analytics &amp; Reporting</h1>
+          <AuthControls className="ml-auto" />
         </header>
         <div className="flex-1 p-4 md:p-6">{children}</div>
       </main>
@@ -151,6 +153,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               );
             })}
           </nav>
+          <div className="border-t p-3">
+            <AuthControls variant="sidebar" />
+          </div>
         </div>
       </div>
     </div>

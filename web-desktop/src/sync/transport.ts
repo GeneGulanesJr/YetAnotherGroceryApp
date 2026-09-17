@@ -1,3 +1,4 @@
+import { getApiAuthToken } from "@/lib/auth-token";
 import { getApiBaseUrl } from "@/lib/data-source";
 
 import type { SyncTransport } from "./engine";
@@ -22,7 +23,11 @@ export function createFetchTransport(): SyncTransport | null {
   return {
     async pullDelta(cursor: string | null): Promise<PullDeltaResponse> {
       const query = cursor === null ? "" : `?cursor=${encodeURIComponent(cursor)}`;
-      const response = await fetch(`${baseUrl}/sync/pull${query}`, { method: "GET" });
+      const token = await getApiAuthToken();
+      const response = await fetch(`${baseUrl}/sync/pull${query}`, {
+        method: "GET",
+        headers: token !== null ? { authorization: `Bearer ${token}` } : undefined,
+      });
       if (!response.ok) {
         throw new Error(`pull failed: HTTP ${response.status}`);
       }
