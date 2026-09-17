@@ -8,13 +8,15 @@
     "node": ">=24"
   },
   "scripts": {
-    "dev": "node --env-file-if-exists=.env --watch --import tsx src/server.ts",
+    "dev": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --watch --import tsx src/server.ts",
     "start": "node --env-file-if-exists=.env dist/server.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "build": "tsc -p tsconfig.build.json"
   },
   "dependencies": {
+    "@clerk/backend": "^3.18.1",
+    "@clerk/fastify": "^3.1.79",
     "@fastify/cors": "^11.3.0",
     "better-sqlite3": "^13.0.3",
     "drizzle-orm": "^0.45.2",

@@ -6,7 +6,7 @@
 import cors from "@fastify/cors";
 import fastify, { type FastifyInstance } from "fastify";
 
-import { checkDeviceId, DEVICE_ID_HEADER } from "./auth.js";
+import { createAuthPreHandler, createJwtPreHandler, type AuthOptions } from "./auth.js";
 import {
   getSpendingByCategory,
   getSpendingByStore,
@@ -25,6 +25,8 @@ import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, pullDelta } from "./sync/pull.js";
 export interface AppOptions {
   db: ApiDb;
   config: Config;
+  /** Auth overrides (test seam: stub token verification). */
+  auth?: AuthOptions;
 }
 
 export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
@@ -37,18 +39,21 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
 
   app.get("/health", async () => ({ status: "ok", time: Date.now() }));
 
-  // Sync routes: device identity placeholder (Clerk JWT TODO — see auth.ts).
+  // Clerk JWT verification on protected routes; device-identity-only mode
+  // when no CLERK_SECRET_KEY is configured (see auth.ts).
+  const syncAuth = createAuthPreHandler({
+    secretKey: config.clerkSecretKey,
+    ...options.auth,
+  });
+  const analyticsAuth = createJwtPreHandler({
+    secretKey: config.clerkSecretKey,
+    ...options.auth,
+  });
+
+  // Sync routes: device identity + optional Clerk JWT.
   await app.register(
     async function syncRoutes(sync) {
-      sync.addHook("preHandler", async (request, reply) => {
-        // TODO(auth): verify the Clerk bearer JWT here and bind it to the device
-        // id (see AUTH_TODO in auth.ts). Header-only identity until then.
-        const deviceId = checkDeviceId(request.headers);
-        if (deviceId === null) {
-          return reply.code(401).send({ error: `missing ${DEVICE_ID_HEADER} header` });
-        }
-        request.deviceId = deviceId;
-      });
+      sync.addHook("preHandler", syncAuth);
 
       sync.post("/push", async (request, reply) => {
         const body = request.body as { deviceId?: unknown; mutations?: unknown } | null;
@@ -85,70 +90,77 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     { prefix: "/sync" },
   );
 
-  // Analytics routes: public read-only aggregations (auth TODO in auth.ts).
-  const parseFilters = (query: Record<string, unknown>): AnalyticsFilters | string => {
-    const filters: AnalyticsFilters = {};
-    if (query["rangeDays"] !== undefined) {
-      const value = Number(query["rangeDays"]);
-      if (!Number.isInteger(value) || value <= 0) {
-        return "rangeDays must be a positive integer";
-      }
-      filters.rangeDays = value;
-    }
-    if (query["currency"] !== undefined) {
-      const value = query["currency"];
-      if (typeof value !== "string" || value.trim() === "") {
-        return "currency must be a non-empty string";
-      }
-      filters.currency = value.trim();
-    }
-    return filters;
-  };
+  // Analytics routes: read-only aggregations, same auth as sync (auth.ts).
+  await app.register(
+    async function analyticsRoutes(analytics) {
+      analytics.addHook("preHandler", analyticsAuth);
 
-  app.get("/analytics/spending-summary", async (request, reply) => {
-    const filters = parseFilters(request.query as Record<string, unknown>);
-    if (typeof filters === "string") {
-      return reply.code(400).send({ error: filters });
-    }
-    return getSpendingSummary(db, filters);
-  });
+      const parseFilters = (query: Record<string, unknown>): AnalyticsFilters | string => {
+        const filters: AnalyticsFilters = {};
+        if (query["rangeDays"] !== undefined) {
+          const value = Number(query["rangeDays"]);
+          if (!Number.isInteger(value) || value <= 0) {
+            return "rangeDays must be a positive integer";
+          }
+          filters.rangeDays = value;
+        }
+        if (query["currency"] !== undefined) {
+          const value = query["currency"];
+          if (typeof value !== "string" || value.trim() === "") {
+            return "currency must be a non-empty string";
+          }
+          filters.currency = value.trim();
+        }
+        return filters;
+      };
 
-  app.get("/analytics/spending-series", async (request, reply) => {
-    const query = request.query as Record<string, unknown>;
-    const granularity = query["granularity"];
-    if (granularity !== "day" && granularity !== "week" && granularity !== "month") {
-      return reply.code(400).send({ error: "granularity must be one of day, week, month" });
-    }
-    const filters = parseFilters(query);
-    if (typeof filters === "string") {
-      return reply.code(400).send({ error: filters });
-    }
-    return getSpendingSeries(db, granularity as Granularity, filters);
-  });
+      analytics.get("/spending-summary", async (request, reply) => {
+        const filters = parseFilters(request.query as Record<string, unknown>);
+        if (typeof filters === "string") {
+          return reply.code(400).send({ error: filters });
+        }
+        return getSpendingSummary(db, filters);
+      });
 
-  app.get("/analytics/spending-by-store", async (request, reply) => {
-    const filters = parseFilters(request.query as Record<string, unknown>);
-    if (typeof filters === "string") {
-      return reply.code(400).send({ error: filters });
-    }
-    return getSpendingByStore(db, filters);
-  });
+      analytics.get("/spending-series", async (request, reply) => {
+        const query = request.query as Record<string, unknown>;
+        const granularity = query["granularity"];
+        if (granularity !== "day" && granularity !== "week" && granularity !== "month") {
+          return reply.code(400).send({ error: "granularity must be one of day, week, month" });
+        }
+        const filters = parseFilters(query);
+        if (typeof filters === "string") {
+          return reply.code(400).send({ error: filters });
+        }
+        return getSpendingSeries(db, granularity as Granularity, filters);
+      });
 
-  app.get("/analytics/spending-by-category", async (request, reply) => {
-    const filters = parseFilters(request.query as Record<string, unknown>);
-    if (typeof filters === "string") {
-      return reply.code(400).send({ error: filters });
-    }
-    return getSpendingByCategory(db, filters);
-  });
+      analytics.get("/spending-by-store", async (request, reply) => {
+        const filters = parseFilters(request.query as Record<string, unknown>);
+        if (typeof filters === "string") {
+          return reply.code(400).send({ error: filters });
+        }
+        return getSpendingByStore(db, filters);
+      });
 
-  app.get("/analytics/price-watch", async (request, reply) => {
-    const filters = parseFilters(request.query as Record<string, unknown>);
-    if (typeof filters === "string") {
-      return reply.code(400).send({ error: filters });
-    }
-    return getPriceWatch(db, filters);
-  });
+      analytics.get("/spending-by-category", async (request, reply) => {
+        const filters = parseFilters(request.query as Record<string, unknown>);
+        if (typeof filters === "string") {
+          return reply.code(400).send({ error: filters });
+        }
+        return getSpendingByCategory(db, filters);
+      });
+
+      analytics.get("/price-watch", async (request, reply) => {
+        const filters = parseFilters(request.query as Record<string, unknown>);
+        if (typeof filters === "string") {
+          return reply.code(400).send({ error: filters });
+        }
+        return getPriceWatch(db, filters);
+      });
+    },
+    { prefix: "/analytics" },
+  );
 
   return app;
 }

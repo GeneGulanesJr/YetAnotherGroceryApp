@@ -4,6 +4,8 @@ export interface Config {
   databaseUrl: string;
   /** CORS allow-origin value; empty string allows all origins (development). */
   allowedOrigin: string;
+  /** Clerk secret key; empty string runs protected routes without JWT auth. */
+  clerkSecretKey: string;
 }
 
 function intEnv(name: string, fallback: number): number {
@@ -23,5 +25,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     port: intEnv("PORT", 8787),
     databaseUrl: env.DATABASE_URL ?? "file:local.db",
     allowedOrigin: env.ALLOWED_ORIGIN ?? "",
+    clerkSecretKey: env.CLERK_SECRET_KEY ?? "",
   };
 }

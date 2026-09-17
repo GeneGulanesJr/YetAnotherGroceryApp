@@ -1,3 +1,4 @@
+import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import "./globals.css";
 
@@ -14,9 +15,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="font-sans antialiased">
-        <Providers>
+        <ClerkProvider>
+          <Providers>
           <AppShell>{children}</AppShell>
-        </Providers>
+          </Providers>
+        </ClerkProvider>
       </body>
     </html>
   );

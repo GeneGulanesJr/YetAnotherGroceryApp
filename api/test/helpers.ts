@@ -30,7 +30,12 @@ export function createTestDb(): ApiDb {
   return db;
 }
 
-export const testConfig: Config = { port: 0, databaseUrl: ":memory:", allowedOrigin: "" };
+export const testConfig: Config = {
+  port: 0,
+  databaseUrl: ":memory:",
+  allowedOrigin: "",
+  clerkSecretKey: "",
+};
 
 export async function buildTestApp(db: ApiDb): Promise<FastifyInstance> {
   return buildApp({ db, config: testConfig });
