@@ -33,10 +33,22 @@ jobs:
   # runner so the deploy can fail independently of the CI workflow (and
   # so we are not coupled to a separate workflow that could be disabled).
   # Cheap (~1 min) — typecheck/lint/test + both build modes.
+  #
+  # Clerk's `<ClerkProvider>` initializes during prerender with the
+  # publishable key inlined into the client bundle. Without it,
+  # `clerk-react` throws "Missing publishableKey" and the prerender of
+  # `/` fails (observed after the Clerk auth merge in PR #12). The
+  # publishable key below is the project test key (`pk_test_*`),
+  # which Clerk publishes by design — it appears in the rendered HTML
+  # and JS bundle regardless. The matching `sk_test_*` secret key is
+  # not required for the static export; the runtime middleware is
+  # dropped on `output: export` (Next.js warns about this).
   check:
     name: CI matrix
     runs-on: ubuntu-latest
     timeout-minutes: 12
+    env:
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_b3JpZW50ZWQtY293YmlyZC0yMzc0LmNsZXJrLmFjY291bnRzLmRldiQ
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -75,7 +87,11 @@ jobs:
       - name: Build static export
         # APP_TARGET=desktop + NEXT_PUBLIC_STATIC_EXPORT=1 produces the
         # static HTML the dashboard reads. Output lands in `out/` and is
-        # uploaded to Pages via wrangler.
+        # uploaded to Pages via wrangler. Same publishable key as the CI
+        # matrix above — without it, prerender of `/` throws "Missing
+        # publishableKey".
+        env:
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_b3JpZW50ZWQtY293YmlyZC0yMzc0LmNsZXJrLmFjY291bnRzLmRldiQ
         run: npm run build:static
 
       - name: Deploy (production)

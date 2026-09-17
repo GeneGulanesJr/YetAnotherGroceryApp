@@ -27,5 +27,21 @@ jobs:
       - run: npm test
       # Both targets must build (spec: desktop breaks if code relies on a
       # runtime Next.js server, so the static export is validated in CI).
-      - run: npm run build
-      - run: npm run build:desktop
+      #
+      # Clerk's `<ClerkProvider>` initializes during prerender with the
+      # publishable key inlined into the client bundle. Without it,
+      # `clerk-react` throws "Missing publishableKey" and the
+      # prerender of `/` fails (observed after the Clerk auth merge in
+      # PR #12). The publishable key below is the project test key
+      # (`pk_test_*`), which Clerk publishes by design — it appears in
+      # the rendered HTML and JS bundle regardless. The matching
+      # `sk_test_*` secret key is not required for the build; runtime
+      # middleware/auth reads it from `process.env` on the server.
+      - name: Build (web target)
+        env:
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_b3JpZW50ZWQtY293YmlyZC0yMzc0LmNsZXJrLmFjY291bnRzLmRldiQ
+        run: npm run build
+      - name: Build (desktop / static export)
+        env:
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_b3JpZW50ZWQtY293YmlyZC0yMzc0LmNsZXJrLmFjY291bnRzLmRldiQ
+        run: npm run build:desktop
