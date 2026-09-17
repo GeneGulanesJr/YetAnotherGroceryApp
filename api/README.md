@@ -47,11 +47,19 @@ allows all).
 | GET | `/analytics/spending-by-category?rangeDays=&currency=` | `NamedAmount[]` |
 | GET | `/analytics/price-watch?rangeDays=&currency=` | `PriceWatchRow[]` |
 
-The `/sync/*` routes require an `X-Device-Id` header (401 without) and reject
-a body `deviceId` that differs from it (403). **This is a placeholder** — no
-secrets, no real claims. The documented hook point for Clerk JWT verification
-is `src/auth.ts` (`AUTH_TODO`) plus the `preHandler` in `src/app.ts`. Analytics
-routes are public read-only for now and gain the same auth when Clerk lands.
+**Auth.** `/sync/*` routes require an `X-Device-Id` header (401 without) and
+reject a body `deviceId` that differs from it (403).
+
+When `CLERK_SECRET_KEY` is set, protected routes additionally require a valid
+`Authorization: Bearer <jwt>` issued by that Clerk instance — sync routes need
+both the header and the token; analytics routes need only the token. Without
+the key (local dev, tests) the server runs in device-identity-only mode and
+analytics stay open. Verification lives in `src/auth.ts`
+(`createAuthPreHandler` / `createJwtPreHandler`, Clerk JWKS via
+`@clerk/backend`). Remaining work (`AUTH_TODO` in `src/auth.ts`): bind JWT
+subjects to device ids via a device-registration table and scope queries by
+the authenticated user — the canonical tables are still keyed by `device_id`
+and pull is global.
 
 ## Protocol summary (wire types in `src/protocol.ts`)
 
@@ -140,7 +148,8 @@ migrations at boot, and shuts down gracefully on SIGINT/SIGTERM.
 
 ## Auth TODO
 
-See `src/auth.ts`. When Clerk is wired up: verify the bearer JWT (Clerk
-JWKS) in the sync/analytics preHandler, bind the JWT subject to device ids
-via a device-registration table, and scope all queries by the authenticated
-user. No secret material lives here.
+JWT verification is live (see **Auth** above). What remains in `src/auth.ts`
+(`AUTH_TODO`): bind the JWT subject to device ids via a device-registration
+table, and scope all queries by the authenticated user — the canonical tables
+are still keyed by `device_id` and pull is global. No secret material lives
+here.
