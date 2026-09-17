@@ -44,4 +44,4 @@ jobs:
       - name: Build (desktop / static export)
         env:
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_b3JpZW50ZWQtY293YmlyZC0yMzc0LmNsZXJrLmFjY291bnRzLmRldiQ
-        run: npm run build:desktop
+        run: npm run build:static
