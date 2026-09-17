@@ -1,0 +1,30 @@
+// Cloudflare Pages project configuration for YetAnotherGroceryApp.
+// Mirrors the deploy command in `package.json` (`pages:deploy`) so local
+// `wrangler pages deploy` and CI (`cloudflare/wrangler-action@v3`) stay
+// in sync.
+//
+// First-time setup:
+//   1. Create the Pages project (replace `yaga-web-desktop` if different):
+//        npx wrangler pages project create yaga-web-desktop --production-branch=main
+//   2. Configure two GitHub repository secrets used by the deploy
+//      workflow:
+//        CLOUDFLARE_API_TOKEN   — scoped to `Cloudflare Pages: Edit`
+//        CLOUDFLARE_ACCOUNT_ID  — found on the Cloudflare dashboard
+//                                 right sidebar.
+//   3. Set a repository variable (not secret — it is not sensitive):
+//        CLOUDFLARE_PAGES_PROJECT = yaga-web-desktop
+//      The default name matches what `pages:deploy` / the workflow use.
+//   4. Push to `main`; the `Web/Desktop — Cloudflare Pages` workflow
+//      builds `out/` and runs `wrangler pages deploy` against it.
+//
+// See: https://developers.cloudflare.com/pages/functions/config/
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "yaga-web-desktop",
+  "pages_build_output_dir": "out",
+  "compatibility_date": "2024-09-01",
+  "compatibility_flags": [],
+  "observability": {
+    "enabled": true
+  }
+}

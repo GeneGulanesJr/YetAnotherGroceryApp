@@ -1,0 +1,37 @@
+# Cloudflare Pages headers for the YetAnotherGroceryApp web/desktop
+# static export (`npm run build:static`). Next.js copies the contents of
+# `public/` verbatim to `out/` during the build, and Cloudflare Pages
+# reads `_headers` from the deployed output root.
+
+# --- Long-lived cache for fingerprinted build artifacts --------------------
+# Next.js hashes these paths; safe to cache forever.
+# https://nextjs.org/docs/app/api-reference/next-config-js/assetPrefix
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/_next/static/media/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/_next/static/chunks/app/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# --- HTML pages must revalidate so deploys propagate ---------------------
+# `must-revalidate` lets Cloudflare's edge cache serve a stale copy while
+# it pulls a fresh one in the background (stale-while-revalidate).
+/*.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+# --- Global security headers ------------------------------------------
+# Applied to every response, including static assets and the SPA shell.
+# Clerk's hosted sign-in / sign-up forms are framed inside the app, so
+# `frame-ancestors 'self'` (not DENY) is required for the auth UX to work.
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: SAMEORIGIN
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), interest-cohort=()
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  # Clerk's auth script + Clerk-hosted auth pages need to run; allow only
+  # the publishable-key-derived origins (see `clerk-js-script` tag in
+  # the rendered HTML) and the api host.
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://*.clerk.accounts.dev https://clerk-telemetry.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.clerk.com https://*.clerk.accounts.dev https://img.clerk.com; font-src 'self' data:; connect-src 'self' https://*.clerk.com https://*.clerk.accounts.dev https://api.clerk.dev https://clerk-telemetry.com; frame-src 'self' https://*.clerk.com https://*.clerk.accounts.dev https://accounts.dev; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self' https://*.clerk.com https://*.clerk.accounts.dev
