@@ -1,0 +1,18 @@
+# Cloudflare Pages redirects for the YetAnotherGroceryApp web/desktop
+# static export (`npm run build:static`). All app routes are pre-rendered
+# as static HTML with `trailingSlash: true`, so no SPA fallback is needed;
+# the only adjustments are cosmetic URL fixes and the catch-all 404.
+
+# Strip trailing-slash duplicates that some clients send accidentally.
+/products    /products/    301
+/stores      /stores/      301
+/reports     /reports/     301
+/settings    /settings/    301
+/sign-in     /sign-in/     301
+/sign-up     /sign-up/     301
+
+# Anything else that 404s gets the static 404 page (already served by
+# Cloudflare from `/404.html` automatically — this rule just makes the
+# intent explicit and works around edge cases where `/404.html` is not
+# picked up).
+/404    /404.html    404

@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:desktop": "cross-env APP_TARGET=desktop next build",
+    "build:static": "cross-env APP_TARGET=desktop NEXT_PUBLIC_STATIC_EXPORT=1 next build",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
@@ -13,7 +13,9 @@
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
-    "db:embed": "node scripts/embed-migrations.mjs"
+    "db:embed": "node scripts/embed-migrations.mjs",
+    "pages:deploy": "wrangler pages deploy out --project-name=yaga-web-desktop --commit-dirty=true",
+    "pages:preview": "wrangler pages deploy out --project-name=yaga-web-desktop"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.9.0",
@@ -54,6 +56,7 @@
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.6.3",
-    "vitest": "^2.1.8"
+    "vitest": "^2.1.8",
+    "wrangler": "^3.114.17"
   }
 }
