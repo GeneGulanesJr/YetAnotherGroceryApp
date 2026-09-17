@@ -1,5 +1,6 @@
 export type RootStackParamList = {
   MainTabs: undefined;
+  Auth: undefined;
   Scanner: undefined;
   ProductResolve: { barcode: string; format?: string };
   ManualProduct: { barcode?: string };

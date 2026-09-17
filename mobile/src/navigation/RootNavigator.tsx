@@ -2,6 +2,7 @@ import { DarkTheme, DefaultTheme, NavigationContainer } from "@react-navigation/
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useColorScheme } from "react-native";
 
+import { AuthScreen } from "../screens/AuthScreen";
 import { ManualProductScreen } from "../screens/ManualProductScreen";
 import { PriceCaptureScreen } from "../screens/PriceCaptureScreen";
 import { PriceTagScreen } from "../screens/PriceTagScreen";
@@ -24,6 +25,11 @@ export function RootNavigator() {
           name="MainTabs"
           component={MainTabs}
           options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Auth"
+          component={AuthScreen}
+          options={{ title: "Account" }}
         />
         <Stack.Screen
           name="Scanner"

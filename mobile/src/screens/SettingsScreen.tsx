@@ -1,6 +1,8 @@
 import { useCallback, useState } from "react";
 import { Alert, Pressable, Text, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useNavigation } from "@react-navigation/native";
 
 import { ScreenContainer } from "../components/ScreenContainer";
 import { PrimaryButton } from "../components/ui";
@@ -12,10 +14,14 @@ import {
 } from "../db/repositories/meta";
 import { useAppStore } from "../store/useAppStore";
 import { syncConfigured, syncNow } from "../sync/client";
+import type { RootStackParamList } from "../navigation/types";
+
+type SettingsNavigation = NativeStackNavigationProp<RootStackParamList>;
 
 const CURRENCIES = ["PHP", "USD", "EUR", "GBP", "JPY", "SGD", "AUD", "CAD"] as const;
 
 export function SettingsScreen() {
+  const navigation = useNavigation<SettingsNavigation>();
   const [currency, setCurrency] = useState(() => getDefaultCurrency(getDatabase()));
   const [pending, setPending] = useState(() => getPendingMutationCount(getDatabase()));
   const syncStatus = useAppStore((state) => state.syncStatus);
@@ -56,6 +62,17 @@ export function SettingsScreen() {
               </Text>
             </Pressable>
           ))}
+        </View>
+
+        <Text className="mt-8 text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+          Account
+        </Text>
+        <View className="mt-2">
+          <PrimaryButton
+            label="Sign in / manage account"
+            variant="secondary"
+            onPress={() => navigation.navigate("Auth")}
+          />
         </View>
 
         <Text className="mt-8 text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
