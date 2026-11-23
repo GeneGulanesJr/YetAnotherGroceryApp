@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Pressable, Text, TextInput, View } from "react-native";
+import { ScrollView, View } from "react-native";
 import { useAuth, useClerk, useSignIn, useSignUp, useUser } from "@clerk/expo";
 
 import { ScreenContainer } from "../components/ScreenContainer";
-import { PrimaryButton } from "../components/ui";
+import { AppTextInput, Chip, Field, Notice, PrimaryButton, Text } from "../components/ui";
 
 /**
  * Account screen: email + password sign-in/sign-up against Clerk, plus the
@@ -44,16 +44,21 @@ export function AuthScreen() {
   const { isLoaded, isSignedIn } = useAuth();
   return (
     <ScreenContainer>
-      <View className="flex-1 px-6 py-8">
-        <Text className="text-2xl font-bold text-slate-900 dark:text-slate-50">Account</Text>
+      <ScrollView contentContainerClassName="px-5 pb-8 pt-4" keyboardShouldPersistTaps="handled">
+        <Text tone="secondary">
+          Optional. An account syncs your library and prices between devices; everything works
+          offline without one.
+        </Text>
         {!isLoaded ? (
-          <Text className="mt-4 text-slate-500 dark:text-slate-400">Loading…</Text>
+          <Text tone="meta" className="mt-4">
+            Loading…
+          </Text>
         ) : isSignedIn ? (
           <SignedInView />
         ) : (
           <SignedOutView />
         )}
-      </View>
+      </ScrollView>
     </ScreenContainer>
   );
 }
@@ -63,14 +68,14 @@ function SignedInView() {
   const { signOut } = useClerk();
   return (
     <View className="mt-6">
-      <Text className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+      <Text variant="label" tone="secondary">
         Signed in as
       </Text>
-      <Text className="mt-1 text-lg text-slate-900 dark:text-slate-50">
+      <Text variant="title" className="mt-1">
         {user?.primaryEmailAddress?.emailAddress ?? "unknown"}
       </Text>
       <View className="mt-6">
-        <PrimaryButton label="Sign out" variant="danger" onPress={() => void signOut()} />
+        <PrimaryButton label="Sign out" variant="secondary" icon="log-out-outline" onPress={() => void signOut()} />
       </View>
     </View>
   );
@@ -148,71 +153,55 @@ function SignedOutView() {
 
   return (
     <View className="mt-6">
-      <View className="flex-row">
+      <View className="mb-5 flex-row">
         {(["sign-in", "sign-up"] as const).map((value) => (
-          <Pressable
+          <Chip
             key={value}
+            label={value === "sign-in" ? "Sign in" : "Sign up"}
+            selected={mode === value}
             onPress={() => {
               setMode(value);
               setPendingVerification(false);
               setError(null);
             }}
-            className={`mr-2 rounded-full px-4 py-1.5 ${mode === value ? "bg-teal-700" : "bg-slate-200 dark:bg-slate-700"}`}
-          >
-            <Text className={`text-sm font-semibold ${mode === value ? "text-white" : "text-slate-700 dark:text-slate-200"}`}>
-              {value === "sign-in" ? "Sign in" : "Sign up"}
-            </Text>
-          </Pressable>
+          />
         ))}
       </View>
 
-      <Text className="mt-5 text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-        Email
-      </Text>
-      <TextInput
-        className="mt-1 rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-50"
-        autoCapitalize="none"
-        autoComplete="email"
-        keyboardType="email-address"
-        value={email}
-        onChangeText={setEmail}
-        placeholder="you@example.com"
-        placeholderTextColor="#94a3b8"
-      />
+      <Field label="Email">
+        <AppTextInput
+          autoCapitalize="none"
+          autoComplete="email"
+          keyboardType="email-address"
+          value={email}
+          onChangeText={setEmail}
+          placeholder="you@example.com"
+        />
+      </Field>
 
-      <Text className="mt-4 text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-        Password
-      </Text>
-      <TextInput
-        className="mt-1 rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-50"
-        autoCapitalize="none"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-        placeholder="At least 8 characters"
-        placeholderTextColor="#94a3b8"
-      />
+      <Field label="Password">
+        <AppTextInput
+          autoCapitalize="none"
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+          placeholder="At least 8 characters"
+        />
+      </Field>
 
       {mode === "sign-up" && pendingVerification ? (
-        <>
-          <Text className="mt-4 text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-            Verification code
-          </Text>
-          <TextInput
-            className="mt-1 rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-50"
+        <Field label="Verification code">
+          <AppTextInput
             autoCapitalize="none"
             keyboardType="number-pad"
             value={code}
             onChangeText={setCode}
             placeholder="Check your email"
-            placeholderTextColor="#94a3b8"
           />
-        </>
+        </Field>
       ) : null}
 
-      {error !== null ? (
-        <Text className="mt-3 text-sm text-rose-600 dark:text-rose-400">{error}</Text>
-      ) : null}
+      {error !== null ? <Notice>{error}</Notice> : null}
 
       <View className="mt-6">
         <PrimaryButton

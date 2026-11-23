@@ -18,7 +18,13 @@
       "package": "com.yetanothergroceryapp.mobile",
       "permissions": [
         "android.permission.CAMERA"
-      ]
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundImage": "./assets/adaptive-icon-background.png",
+        "monochromeImage": "./assets/adaptive-icon-monochrome.png",
+        "backgroundColor": "#1E8F86"
+      }
     },
     "extra": {
       "eas": {
@@ -28,7 +34,39 @@
     },
     "owner": "genegulanesjrs-team",
     "plugins": [
-      "expo-font",
+      [
+        "expo-font",
+        {
+          "android": {
+            "fonts": [
+              {
+                "fontFamily": "Bricolage Grotesque",
+                "fontDefinitions": [
+                  {
+                    "path": "./assets/fonts/BricolageGrotesque_400Regular.ttf",
+                    "weight": 400
+                  },
+                  {
+                    "path": "./assets/fonts/BricolageGrotesque_600SemiBold.ttf",
+                    "weight": 600
+                  },
+                  {
+                    "path": "./assets/fonts/BricolageGrotesque_800ExtraBold.ttf",
+                    "weight": 800
+                  }
+                ]
+              }
+            ]
+          },
+          "ios": {
+            "fonts": [
+              "./assets/fonts/BricolageGrotesque_400Regular.ttf",
+              "./assets/fonts/BricolageGrotesque_600SemiBold.ttf",
+              "./assets/fonts/BricolageGrotesque_800ExtraBold.ttf"
+            ]
+          }
+        }
+      ],
       [
         "expo-build-properties",
         {
@@ -44,7 +82,22 @@
           "photosPermission": "YetAnotherGroceryApp can access your photo library to import product photos."
         }
       ],
-      "expo-background-task"
-    ]
+      "expo-background-task",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 160,
+          "resizeMode": "contain",
+          "backgroundColor": "#1E8F86",
+          "dark": {
+            "image": "./assets/splash-icon-dark.png",
+            "backgroundColor": "#0F2226"
+          }
+        }
+      ]
+    ],
+    "icon": "./assets/icon.png",
+    "backgroundColor": "#CFEAE5"
   }
 }

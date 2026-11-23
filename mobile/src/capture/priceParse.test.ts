@@ -1,4 +1,4 @@
-import { bestShelfPrice, parsePriceCandidates } from "./priceParse";
+import { assessPrice, bestShelfPrice, parsePriceCandidates } from "./priceParse";
 
 describe("price parsing from OCR lines", () => {
   it("extracts currency-marked decimals with the highest confidence", () => {
@@ -56,5 +56,28 @@ describe("price parsing from OCR lines", () => {
     const bbox = { x: 10, y: 20, width: 30, height: 40 };
     const [candidate] = parsePriceCandidates([{ text: "₱55.00", bbox }]);
     expect(candidate.bbox).toEqual(bbox);
+  });
+});
+
+describe("clear vs unclear price", () => {
+  it("is unclear with no candidates", () => {
+    expect(assessPrice([])).toMatchObject({ clear: false, candidates: [] });
+  });
+
+  it("is unclear when only a bare 0.6 decimal was read", () => {
+    expect(assessPrice(parsePriceCandidates([{ text: "89.95" }])).clear).toBe(false);
+  });
+
+  it("is unclear when only a unit price is confident", () => {
+    const result = assessPrice(parsePriceCandidates([{ text: "₱12.50 per 100 g" }]));
+    expect(result.clear).toBe(false);
+  });
+
+  it("is clear for a currency-marked decimal and lists shelf before unit prices", () => {
+    const result = assessPrice(
+      parsePriceCandidates([{ text: "₱12.50 / 100g" }, { text: "₱89.95" }, { text: "₱89.95" }]),
+    );
+    expect(result.clear).toBe(true);
+    expect(result.candidates.map((c) => c.minor)).toEqual([8995, 1250]);
   });
 });

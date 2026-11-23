@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { Text, View } from "react-native";
+import { ScrollView, View } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
-import { EmptyState, PrimaryButton } from "../components/ui";
-import { findByBarcode } from "../db/repositories/barcodes";
+import { Card, EmptyState, Notice, PrimaryButton, Text } from "../components/ui";
+import { findByScan } from "../db/repositories/barcodes";
 import { getActiveTrip, addProductToTrip } from "../db/repositories/trips";
 import { latestPriceForProduct } from "../db/repositories/prices";
 import { getDefaultCurrency } from "../db/repositories/meta";
@@ -13,7 +13,6 @@ import { getDatabase } from "../db/database";
 import type { RootStackParamList } from "../navigation/types";
 import { formatMoney } from "../utils/money";
 import {
-  barcodeLookupKeys,
   normalizeBarcode,
   type ScannedFormat,
 } from "../utils/barcode";
@@ -28,8 +27,7 @@ interface ResolvedScan {
 
 function resolveScan(rawBarcode: string, format: ScannedFormat): ResolvedScan {
   const db = getDatabase();
-  const keys = barcodeLookupKeys(rawBarcode, format);
-  const match = keys.map((key) => findByBarcode(db, key)).find((m) => m !== null) ?? null;
+  const match = findByScan(db, rawBarcode, format);
   return {
     match,
     lastPrice:
@@ -57,18 +55,17 @@ export function ProductResolveScreen({ navigation, route }: ResolveProps) {
 
   if (match === null) {
     return (
-      <View className="flex-1 bg-white px-6 py-8 dark:bg-slate-900">
+      <View className="flex-1 bg-paper px-5 pb-6">
         <EmptyState
+          icon="barcode-outline"
           title="Not in your library yet"
-          message={`Barcode ${normalized} has not been captured on this device. Create the product once — later scans of the same barcode will recognize it.`}
+          message={`Barcode ${normalized} has not been captured on this phone. Create the product once and later scans will recognize it.`}
         />
-        <PrimaryButton
-          label="Create this product"
-          onPress={() =>
-            navigation.replace("ManualProduct", { barcode: normalized })
-          }
-        />
-        <View className="mt-3">
+        <View className="gap-3">
+          <PrimaryButton
+            label="Create this product"
+            onPress={() => navigation.replace("ManualProduct", { barcode: normalized })}
+          />
           <PrimaryButton
             label="Scan something else"
             variant="secondary"
@@ -104,84 +101,75 @@ export function ProductResolveScreen({ navigation, route }: ResolveProps) {
   };
 
   return (
-    <View className="flex-1 bg-white px-6 py-6 dark:bg-slate-900">
-      <Text className="text-xs font-medium tracking-wide text-slate-500 dark:text-slate-400">
+    <ScrollView
+      className="flex-1 bg-paper"
+      contentContainerClassName="flex-grow px-5 py-6"
+    >
+      <Text variant="meta" tone="meta">
         {normalized}
       </Text>
-      <Text className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-50">
+      <Text variant="display" className="mt-1">
         {product.name}
       </Text>
-      {product.brand !== null ? (
-        <Text className="mt-1 text-base text-slate-600 dark:text-slate-300">
-          {product.brand}
-        </Text>
-      ) : null}
+      {product.brand !== null ? <Text tone="secondary">{product.brand}</Text> : null}
       {product.packageSize !== null ? (
-        <Text className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+        <Text tone="meta" className="mt-1">
           {product.packageQuantity !== null ? `${product.packageQuantity} × ` : ""}
           {product.packageSize} {product.unit ?? ""}
         </Text>
       ) : null}
 
-      <View className="mt-6 rounded-2xl bg-slate-100 p-4 dark:bg-slate-800">
-        <Text className="text-sm font-medium text-slate-500 dark:text-slate-400">
+      <Card className="mt-6">
+        <Text variant="label" tone="secondary">
           Last recorded price
         </Text>
         {lastPrice === null ? (
-          <Text className="mt-1 text-slate-600 dark:text-slate-300">
+          <Text tone="meta" className="mt-1">
             No price captured yet
           </Text>
         ) : (
           <View className="mt-1 flex-row items-baseline gap-2">
-            <Text className="text-xl font-semibold text-slate-900 dark:text-slate-50">
+            <Text variant="title">
               {formatMoney({ amountMinor: lastPrice.regularPriceMinor, currency: lastPrice.currency })}
             </Text>
-            <Text className="text-xs text-slate-500 dark:text-slate-400">
+            <Text variant="meta" tone="meta">
               {lastPrice.capturedAt.toLocaleDateString()}
             </Text>
           </View>
         )}
-      </View>
+      </Card>
 
       {addedInfo !== null ? (
-        <Text className="mt-4 text-sm font-medium text-teal-700 dark:text-teal-300">
-          {addedInfo}
-        </Text>
+        <View className="mt-4">
+          <Notice tone="brand" icon="checkmark-circle-outline">
+            {addedInfo}
+          </Notice>
+        </View>
       ) : null}
 
-      <View className="mt-auto gap-3">
+      <View className="mt-auto gap-3 pt-6">
         <PrimaryButton
           label="Photograph price tag"
+          icon="camera-outline"
           onPress={() => navigation.navigate("PriceTag", { productId: product.id })}
         />
         <PrimaryButton
           label="Type price instead"
           variant="secondary"
-          onPress={() =>
-            navigation.navigate("PriceCapture", {
-              productId: product.id,
-              barcode: normalized,
-            })
-          }
+          onPress={() => navigation.navigate("PriceCapture", { productId: product.id, barcode: normalized })}
         />
         {activeTrip !== null && lastPrice !== null ? (
-          <PrimaryButton
-            label="Add to trip at last price"
-            variant="secondary"
-            onPress={quickAddToTrip}
-          />
+          <PrimaryButton label="Add to trip at last price" variant="secondary" onPress={quickAddToTrip} />
         ) : null}
         <PrimaryButton
           label="This is a different product"
           variant="secondary"
-          onPress={() =>
-            navigation.replace("ManualProduct", { barcode: normalized })
-          }
+          onPress={() => navigation.replace("ManualProduct", { barcode: normalized })}
         />
-        <Text className="text-center text-xs text-slate-400">
+        <Text variant="meta" tone="meta" className="text-center">
           Currency: {currency}
         </Text>
       </View>
-    </View>
+    </ScrollView>
   );
 }

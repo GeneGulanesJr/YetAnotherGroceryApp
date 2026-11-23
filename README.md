@@ -11,6 +11,8 @@ personal analytics to help users make smarter shopping decisions.
 | --- | --- | --- |
 | `mobile/` | Expo (SDK 57) + React Native app — the data-capture surface | **Working core**: offline SQLite + barcode scanning + trips/lists/library; verified on device via Expo Go |
 | `web-desktop/` | Next.js 14 web app + Tauri 2 desktop shell — the analytics surface | **Data foundation live**: SQLite replica + SQL analytics via DataSource, dashboard wired, pull-sync + CSV exports |
+| `site/` + `wrangler.jsonc` | Static landing page with a playable cart demo, served by the `yetanothergroceryapp` Cloudflare Worker (Workers Builds on push) | Live on merge to `main` |
+| `design/logo/` | Final "yaga" logo (Jade Palengke): SVG/PNG, generator scripts, app icon/splash sources, colour research | Final |
 | `api/` | Shared sync + analytics backend (Fastify + Drizzle, file/libSQL) | **Dev-ready**: sync push/pull + analytics endpoints, 20 tests; deployment + Clerk auth pending |
 | `specs.md` | Functional/product specification | Stable |
 | `tech.mobile.md` | Mobile technical requirements (+ implementation status) | Source of truth for mobile |
@@ -26,7 +28,7 @@ client only has to drain it.
 ```sh
 cd mobile
 npm install
-npm run typecheck && npm run lint && npm test   # 50 tests, no device needed
+npm run typecheck && npm run lint && npm test   # 227 tests, no device needed
 npx expo start                                  # then scan with Expo Go
 ```
 
@@ -46,6 +48,9 @@ fallback) live in [`mobile/README.md`](mobile/README.md).
       matching, shelf-vs-receipt discrepancy and overcharge rollup
 - [x] Shopping trips (survive app kills), lists → trips, library, history
 - [x] Device-verified via Expo Go (OCR paths need a dev/custom build)
+- [x] Sticker-wallet redesign: Home hub (no tab bar), photo-sticker cart,
+      budget as bills/coins/IOU, Bricolage Grotesque, six themes
+- [x] Final logo (Jade Palengke), app icon, adaptive icon and splash
 - [x] Sync engine client: outbox push, cursor pull, field-level LWW,
       conflict audit, backoff — tested against a mock transport; activates
       automatically once `extra.apiBaseUrl` points at a backend

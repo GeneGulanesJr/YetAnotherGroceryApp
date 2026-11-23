@@ -1,21 +1,24 @@
 import { useState } from "react";
-import {
-  FlatList,
-  Image,
-  Modal,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from "react-native";
+import { FlatList, Image, Pressable, ScrollView, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
-import { AppTextInput, Chip, Field, PrimaryButton } from "../components/ui";
+import {
+  AppTextInput,
+  Card,
+  Chip,
+  Field,
+  FullScreenModal,
+  Notice,
+  PrimaryButton,
+  Text,
+} from "../components/ui";
 import { ingestImage, pickProductPhoto } from "../capture/images";
 import { getDatabase } from "../db/database";
 import { listCategories } from "../db/repositories/categories";
 import { createProduct, getRecentBrands } from "../db/repositories/products";
 import type { RootStackParamList } from "../navigation/types";
+import { useTokens } from "../theme/tokens";
 
 type ManualProductProps = NativeStackScreenProps<RootStackParamList, "ManualProduct">;
 
@@ -28,7 +31,9 @@ const UNITS = ["g", "kg", "mL", "L", "pcs", "pack", "oz", "lb"] as const;
  */
 export function ManualProductScreen({ navigation, route }: ManualProductProps) {
   const barcode = route.params?.barcode ?? null;
-  const [name, setName] = useState("");
+  const confirmedPrice = route.params?.price;
+  const nameSuggestions = route.params?.nameSuggestions ?? [];
+  const [name, setName] = useState(nameSuggestions[0] ?? "");
   const [brand, setBrand] = useState("");
   const categories = listCategories(getDatabase());
   const recentBrands = getRecentBrands(getDatabase(), 8);
@@ -42,6 +47,7 @@ export function ManualProductScreen({ navigation, route }: ManualProductProps) {
   const [categoryQuery, setCategoryQuery] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const t = useTokens();
 
   const selectedCategory = categories.find((c) => c.id === categoryId) ?? null;
   const filteredCategories = categories.filter((c) =>
@@ -73,7 +79,11 @@ export function ManualProductScreen({ navigation, route }: ManualProductProps) {
         barcode,
         photoImageId,
       });
-      navigation.replace("PriceCapture", { productId: product.id, barcode: barcode ?? undefined });
+      navigation.replace("PriceCapture", {
+        productId: product.id,
+        barcode: barcode ?? undefined,
+        ...confirmedPrice,
+      });
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not save the product");
       setSaving(false);
@@ -82,36 +92,56 @@ export function ManualProductScreen({ navigation, route }: ManualProductProps) {
 
   return (
     <ScrollView
-      className="flex-1 bg-white dark:bg-slate-900"
-      contentContainerClassName="px-6 py-6"
+      className="flex-1 bg-paper"
+      contentContainerClassName="px-5 py-6"
       keyboardShouldPersistTaps="handled"
     >
-      {barcode !== null ? (
-        <Field label="Barcode">
-          <Text className="text-base font-medium text-slate-900 dark:text-slate-50">
-            {barcode}
-          </Text>
-        </Field>
+      {barcode !== null || confirmedPrice?.prefillAmount !== undefined ? (
+        <Card className="mb-5">
+          {barcode !== null ? (
+            <Text variant="meta" tone="meta">
+              Barcode {barcode}
+            </Text>
+          ) : null}
+          {confirmedPrice?.prefillAmount !== undefined ? (
+            <Text className="mt-0.5">
+              Price {confirmedPrice.prefillAmount} carries over to the next step.
+            </Text>
+          ) : null}
+        </Card>
       ) : null}
 
-      <Field label="Product name *">
+      <Field
+        label="Product name (required)"
+        hint={nameSuggestions.length > 0 ? "Read from the tag photo. Check it before saving." : undefined}
+      >
         <AppTextInput
           value={name}
           onChangeText={setName}
           placeholder="e.g. Nestlé Fresh Milk"
-          autoFocus={barcode === null}
+          autoFocus={nameSuggestions.length === 0}
           returnKeyType="next"
         />
+        {nameSuggestions.length > 1 ? (
+          <View className="mt-3 flex-row flex-wrap gap-y-3">
+            {nameSuggestions.map((suggestion) => (
+              <Chip
+                key={suggestion}
+                label={suggestion}
+                selected={name === suggestion}
+                onPress={() => setName(suggestion)}
+              />
+            ))}
+          </View>
+        ) : null}
       </Field>
 
-      <Field label="Brand" hint={recentBrands.length > 0 ? "Recent: " + recentBrands.join(", ") : undefined}>
+      <Field label="Brand">
         <AppTextInput value={brand} onChangeText={setBrand} placeholder="e.g. Nestlé" />
         {recentBrands.length > 0 ? (
-          <View className="mt-2 flex-row flex-wrap">
+          <View className="mt-3 flex-row flex-wrap gap-y-3">
             {recentBrands.slice(0, 5).map((b) => (
-              <View key={b} className="mb-2">
-                <Chip label={b} selected={brand === b} onPress={() => setBrand(b)} />
-              </View>
+              <Chip key={b} label={b} selected={brand === b} onPress={() => setBrand(b)} />
             ))}
           </View>
         ) : null}
@@ -120,15 +150,18 @@ export function ManualProductScreen({ navigation, route }: ManualProductProps) {
       <Field label="Category">
         <Pressable
           onPress={() => setCategoryPickerOpen(true)}
-          className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 dark:border-slate-600 dark:bg-slate-800"
+          accessibilityRole="button"
+          android_ripple={{ color: t.line }}
+          className="min-h-12 flex-row items-center justify-between overflow-hidden rounded-xl border-2 border-outline bg-card px-3"
         >
-          <Text className="text-base text-slate-900 dark:text-slate-50">
+          <Text tone={selectedCategory === null ? "meta" : "primary"}>
             {selectedCategory?.name ?? "Pick a category"}
           </Text>
+          <Ionicons name="chevron-down" size={18} color={t.ink3} />
         </Pressable>
       </Field>
 
-      <View className="mb-4 flex-row gap-3">
+      <View className="flex-row gap-3">
         <View className="flex-1">
           <Field label="Pack quantity">
             <AppTextInput
@@ -141,21 +174,15 @@ export function ManualProductScreen({ navigation, route }: ManualProductProps) {
         </View>
         <View className="flex-1">
           <Field label="Package size">
-            <AppTextInput
-              value={packageSize}
-              onChangeText={setPackageSize}
-              placeholder="e.g. 500"
-            />
+            <AppTextInput value={packageSize} onChangeText={setPackageSize} placeholder="e.g. 500" />
           </Field>
         </View>
       </View>
 
       <Field label="Unit">
-        <View className="flex-row flex-wrap">
+        <View className="flex-row flex-wrap gap-y-3">
           {UNITS.map((u) => (
-            <View key={u} className="mb-2">
-              <Chip label={u} selected={unit === u} onPress={() => setUnit(unit === u ? null : u)} />
-            </View>
+            <Chip key={u} label={u} selected={unit === u} onPress={() => setUnit(unit === u ? null : u)} />
           ))}
         </View>
       </Field>
@@ -164,36 +191,34 @@ export function ManualProductScreen({ navigation, route }: ManualProductProps) {
         <AppTextInput value={notes} onChangeText={setNotes} placeholder="Optional" multiline />
       </Field>
 
-      <Field label="Product photo" hint="Optional. Compressed and stored offline.">
+      <Field label="Product photo" hint="Optional. Compressed and stored on this phone.">
         <View className="flex-row items-center gap-3">
-          {photoUri !== null ? (
-            <Image source={{ uri: photoUri }} className="h-20 w-20 rounded-xl" />
-          ) : null}
-          <Pressable
+          {photoUri !== null ? <Image source={{ uri: photoUri }} className="h-20 w-20 rounded-2xl border-2 border-outline" /> : null}
+          <PrimaryButton
+            label={photoUri === null ? "Choose photo" : "Replace photo"}
+            icon="image-outline"
+            variant="secondary"
             onPress={async () => {
               const uri = await pickProductPhoto();
               if (uri !== null) {
                 setPhotoUri(uri);
               }
             }}
-            className="rounded-xl bg-slate-200 px-4 py-2.5 dark:bg-slate-700"
-          >
-            <Text className="font-medium text-slate-800 dark:text-slate-200">
-              {photoUri === null ? "Choose photo" : "Replace photo"}
-            </Text>
-          </Pressable>
+          />
         </View>
       </Field>
 
       {error !== null ? (
-        <Text className="mb-3 text-sm text-rose-600 dark:text-rose-400">{error}</Text>
+        <View className="mb-4">
+          <Notice>{error}</Notice>
+        </View>
       ) : null}
 
       <PrimaryButton label="Save product" onPress={() => void save()} loading={saving} />
 
-      <Modal visible={categoryPickerOpen} animationType="slide" onRequestClose={() => setCategoryPickerOpen(false)}>
-        <View className="flex-1 bg-white px-4 py-6 dark:bg-slate-900">
-          <Text className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-50">
+      <FullScreenModal visible={categoryPickerOpen} onClose={() => setCategoryPickerOpen(false)}>
+        <View className="flex-1 px-5 pt-6">
+          <Text variant="display" className="mb-4">
             Pick a category
           </Text>
           <AppTextInput
@@ -205,6 +230,8 @@ export function ManualProductScreen({ navigation, route }: ManualProductProps) {
           <FlatList
             data={filteredCategories}
             keyExtractor={(c) => c.id}
+            className="mt-2"
+            keyboardShouldPersistTaps="handled"
             renderItem={({ item }) => (
               <Pressable
                 onPress={() => {
@@ -212,19 +239,20 @@ export function ManualProductScreen({ navigation, route }: ManualProductProps) {
                   setCategoryPickerOpen(false);
                   setCategoryQuery("");
                 }}
-                className="border-b border-slate-100 py-3 dark:border-slate-800"
+                accessibilityRole="button"
+                android_ripple={{ color: t.line }}
+                className="min-h-12 flex-row items-center justify-between border-b border-line py-3"
               >
-                <Text className="text-base text-slate-900 dark:text-slate-50">{item.name}</Text>
+                <Text>{item.name}</Text>
+                {item.id === categoryId ? <Ionicons name="checkmark" size={20} color={t.brandText} /> : null}
               </Pressable>
             )}
           />
-          <PrimaryButton
-            label="Cancel"
-            variant="secondary"
-            onPress={() => setCategoryPickerOpen(false)}
-          />
+          <View className="pb-4 pt-2">
+            <PrimaryButton label="Cancel" variant="secondary" onPress={() => setCategoryPickerOpen(false)} />
+          </View>
         </View>
-      </Modal>
+      </FullScreenModal>
     </ScrollView>
   );
 }

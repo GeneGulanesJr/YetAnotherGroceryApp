@@ -1,4 +1,4 @@
-import { addMoney, formatMoney, parseMoney } from "./money";
+import { addMoney, budgetStatus, formatMoney, parseMoney } from "./money";
 
 describe("parseMoney", () => {
   it("parses simple decimal amounts into minor units", () => {
@@ -59,5 +59,15 @@ describe("addMoney", () => {
     expect(() =>
       addMoney({ amountMinor: 100, currency: "USD" }, { amountMinor: 100, currency: "PHP" }),
     ).toThrow();
+  });
+});
+
+describe("budget", () => {
+  it("deducts spending from the budget", () => {
+    expect(budgetStatus(200000, 8950)).toEqual({ remainingMinor: 191050, over: false, fraction: 0.04475 });
+  });
+
+  it("flags going over and caps the meter", () => {
+    expect(budgetStatus(10000, 12500)).toEqual({ remainingMinor: -2500, over: true, fraction: 1 });
   });
 });

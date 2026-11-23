@@ -600,15 +600,19 @@ Use:
 
 * `@react-navigation/native`
 * Native stack navigation
-* Bottom-tab navigation
+
+Implemented (November 2026): there is no tab bar. **Home** (the Shopping
+screen) is the hub; it shows the run in progress, Lists and Library previews,
+past runs (the former History) and receipts, plus a floating **Snap item**
+button that replaces the Capture tab. Lists, Library and Settings (behind the
+gear on the Home header) open as stack screens; manual add-product options
+live in the Library's add sheet.
 
 Primary application sections:
 
-* Shopping
+* Home (Shopping, with past runs and receipts)
 * Lists
-* Capture
 * Library
-* History
 * Settings
 
 Suggested primary flows:
@@ -654,6 +658,14 @@ The selected system should provide:
 * Reusable form components
 * Reusable capture overlays
 * Shared visual language with the desktop application
+
+Implemented: NativeWind, with themes defined once in `src/theme/themes.json`
+(read by both `tailwind.config.js` and `tokens.ts`) and applied at runtime as
+CSS variables by `ThemeRoot`. Six themes: Palengke, Resibo and Jade night (from
+the final Jade Palengke logo) plus Bubblegum, Cream and Night market;
+Automatic follows the system (Palengke / Jade night). Every text pair is
+tested at 4.5:1 or better (`theme.test.ts`). The logo, app icon and splash
+sources live in `design/logo/` at the repository root.
 
 Reusable platform-compatible components may be extracted into:
 

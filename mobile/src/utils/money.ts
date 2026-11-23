@@ -84,3 +84,21 @@ export function addMoney(a: Money, b: Money): Money {
   assertSameCurrency(a, b);
   return { amountMinor: a.amountMinor + b.amountMinor, currency: a.currency };
 }
+
+export interface BudgetStatus {
+  /** Budget minus spent; negative when over. */
+  remainingMinor: number;
+  over: boolean;
+  /** Spent share of the budget, clamped to 0..1 for a meter. */
+  fraction: number;
+}
+
+/** The running budget: every scanned item is deducted as it is added. */
+export function budgetStatus(budgetMinor: number, spentMinor: number): BudgetStatus {
+  const remainingMinor = budgetMinor - spentMinor;
+  return {
+    remainingMinor,
+    over: remainingMinor < 0,
+    fraction: budgetMinor <= 0 ? 1 : Math.min(1, Math.max(0, spentMinor / budgetMinor)),
+  };
+}

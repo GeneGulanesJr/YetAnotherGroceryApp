@@ -145,3 +145,31 @@ export function barcodeLookupKeys(raw: string, format: ScannedFormat): string[] 
 
   return [...keys].filter((key) => key.length > 0);
 }
+
+export interface ScannedCode {
+  data: string;
+  format: ScannedFormat;
+}
+
+/**
+ * Orders the codes found in one photo: check-digit-valid EAN/UPC first (the
+ * product's own code), then QR and other payloads; duplicates dropped.
+ */
+export function rankScannedCodes(results: readonly { type: string; data: string }[]): ScannedCode[] {
+  const seen = new Set<string>();
+  const codes: ScannedCode[] = [];
+  for (const { type, data } of results) {
+    const format = formatFromCameraType(type);
+    const key = normalizeBarcode(data, format);
+    if ((format === "unknown" && !isProbablyBarcode(data)) || key === "" || seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    codes.push({ data, format });
+  }
+  const isGtin = (c: ScannedCode) => {
+    const digits = c.format === "upc-e" ? (expandUpcE(c.data) ?? "") : digitsOnly(c.data);
+    return c.format !== "qr" && [8, 12, 13].includes(digits.length) && isValidCheckDigit(digits);
+  };
+  return codes.sort((a, b) => Number(isGtin(b)) - Number(isGtin(a)));
+}

@@ -11,8 +11,8 @@ for the full technical requirements.
 
 - **React Native** + **TypeScript** (strict mode)
 - **Expo** (`expo prebuild`) with the New Architecture enabled
-- **React Navigation** — native stack + bottom tabs
-- **NativeWind** (Tailwind-based styling) with light/dark themes
+- **React Navigation** — native stack with a Home hub (no tab bar)
+- **NativeWind** (Tailwind-based styling) with six runtime themes (see Design)
 - **Zustand** for transient UI state
 - **TanStack Query** for optional server lookups
 - **Drizzle ORM** schema for the local SQLite store (offline-first)
@@ -25,10 +25,10 @@ mobile/
 ├── App.tsx                  # Providers (query, safe area, gesture, navigation)
 ├── app.json                 # Expo config + permissions
 ├── src/
-│   ├── navigation/          # Root navigator + bottom-tab navigator
-│   ├── screens/             # Shopping, Lists, Capture, Library, History, Settings
+│   ├── navigation/          # Root stack navigator (Home hub, Settings behind the gear)
+│   ├── screens/             # Shopping (home), Lists, Library, Settings + capture flows
 │   ├── components/          # Shared UI building blocks
-│   ├── theme/               # Design tokens (light/dark)
+│   ├── theme/               # themes.json palettes, tokens, ThemeRoot (CSS variables)
 │   ├── store/               # Zustand stores
 │   ├── utils/               # Pure helpers (money parsing/formatting + tests)
 │   └── db/                  # Drizzle schema mirroring the backend tables
@@ -37,8 +37,29 @@ mobile/
 
 ## Primary sections
 
-Shopping · Lists · Capture · Library · History · Settings — matching the flows
-described in the technical requirements.
+**Home** (the Shopping screen) is the hub: the run in progress, Lists and Library
+previews, past runs and receipts, and a floating **Snap item** button, the app's
+one main action. Lists, Library and Settings (behind the gear) open as stack
+screens. During a run, the cart shows as photo stickers sized by what each line
+costs, and the budget left shows as peso bills and coins, or an IOU slip when
+the run goes over.
+
+## Design
+
+- **Logo:** the "yaga" sticker wordmark in the Jade Palengke colours (jade
+  `#1E8F86`, ink `#0A1412`, cream edge `#FFF6DC`, lime details `#E3F08A`).
+  Source files, generators and the colour research live in
+  [`../design/logo/`](../design/logo/README.md).
+- **App icon and splash:** the receipt "y" on jade; Android adaptive icon with
+  a coin-ring background layer and a monochrome (themed) layer. Regenerate with
+  `design/logo/app_assets.py`; icon and splash changes need
+  `npx expo prebuild` and a native rebuild.
+- **Themes** (`src/theme/themes.json`, picked in Settings): Palengke, Resibo
+  and Jade night match the logo; Bubblegum, Cream and Night market are the
+  originals. Automatic = Palengke in light mode, Jade night in dark mode.
+  `theme.test.ts` keeps every text pair at 4.5:1 or better.
+- **Type:** Bricolage Grotesque (OFL-1.1, bundled, weights 400/600/800).
+- Over and under budget always pair colour with ▲/✓ and a word.
 
 ## Scripts
 

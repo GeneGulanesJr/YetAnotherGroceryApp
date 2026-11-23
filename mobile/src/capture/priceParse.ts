@@ -114,3 +114,30 @@ export function bestShelfPrice(
   const ranked = parsePriceCandidates(lines);
   return ranked.find((c) => !c.unitPrice) ?? ranked[0] ?? null;
 }
+
+/** Below this, a shelf price is "not clear": a bare 0.6 decimal never passes alone. */
+export const CLEAR_PRICE_CONFIDENCE = 0.7;
+
+export interface PriceAssessment {
+  /** Review order: shelf prices first, then unit prices, best first. */
+  candidates: PriceCandidate[];
+  /** False → ask for a closer photo or a typed price. */
+  clear: boolean;
+}
+
+/** Ranks the tag's price candidates and decides whether the price is clear. */
+export function assessPrice(ocr: readonly PriceCandidate[]): PriceAssessment {
+  const ranked = [...ocr].sort(
+    (a, b) => Number(a.unitPrice) - Number(b.unitPrice) || b.confidence - a.confidence,
+  );
+  const seen = new Set<string>();
+  const candidates = ranked.filter((c) => {
+    const key = `${c.minor}:${c.unitPrice}`;
+    return seen.has(key) ? false : (seen.add(key), true);
+  });
+  const bestShelf = candidates.find((c) => !c.unitPrice);
+  return {
+    candidates,
+    clear: bestShelf !== undefined && bestShelf.confidence >= CLEAR_PRICE_CONFIDENCE,
+  };
+}
