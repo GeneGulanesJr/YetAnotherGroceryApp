@@ -41,6 +41,7 @@ export function PriceTagScreen({ navigation, route }: PriceTagProps) {
   const [phase, setPhase] = useState<Phase>({ step: "camera" });
   const [torchOn, setTorchOn] = useState(false);
   const cameraRef = useRef<CameraView>(null);
+  const capturing = useRef(false);
 
   useHardwareBack(phase.step === "review" || phase.step === "error", () =>
     setPhase({ step: "camera" }),
@@ -61,13 +62,17 @@ export function PriceTagScreen({ navigation, route }: PriceTagProps) {
   }
 
   const capture = async () => {
-    setPhase({ step: "processing" });
+    if (capturing.current) {
+      return;
+    }
+    capturing.current = true;
     try {
+      // CameraView must stay mounted until the photo resolves: unmounting aborts the capture.
       const photo = await cameraRef.current?.takePictureAsync({ quality: 0.95 });
       if (photo === undefined || photo === null) {
-        setPhase({ step: "camera" });
         return;
       }
+      setPhase({ step: "processing" });
       const { record } = await ingestImage(getDatabase(), photo.uri);
       const ocr = await runOcr(record.localUri ?? record.thumbnailUri ?? photo.uri);
       setPhase({ step: "review", image: record, ocr });
@@ -76,6 +81,8 @@ export function PriceTagScreen({ navigation, route }: PriceTagProps) {
         step: "error",
         message: cause instanceof Error ? cause.message : "Capture failed",
       });
+    } finally {
+      capturing.current = false;
     }
   };
 
