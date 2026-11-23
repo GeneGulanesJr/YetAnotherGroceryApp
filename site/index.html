@@ -4,269 +4,222 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>yaga: a grocery budget you can see</title>
-<meta name="description" content="yaga is a grocery budget app for the supermarket aisle. Snap an item with its price tag; it joins your cart as a sticker and your budget shows as peso bills and coins.">
+<meta name="description" content="yaga is a grocery budget app. Snap an item with its price tag, it joins your cart as a sticker sized by its price, and the budget you have left shows as peso bills and coins.">
 <meta name="theme-color" content="#1E8F86">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta property="og:title" content="yaga: a grocery budget you can see">
-<meta property="og:description" content="Snap the price tag. Watch your budget.">
+<meta property="og:description" content="₱700, six things on the list. Scroll down the aisle.">
 <meta property="og:image" content="apple-touch-icon.png">
 <style>
 @font-face { font-family: "Bricolage Grotesque"; src: url(fonts/BricolageGrotesque_400Regular.ttf) format("truetype"); font-weight: 400; font-display: swap; }
 @font-face { font-family: "Bricolage Grotesque"; src: url(fonts/BricolageGrotesque_600SemiBold.ttf) format("truetype"); font-weight: 600; font-display: swap; }
 @font-face { font-family: "Bricolage Grotesque"; src: url(fonts/BricolageGrotesque_800ExtraBold.ttf) format("truetype"); font-weight: 800; font-display: swap; }
 
-/* Jade Palengke tokens, the same values as design/logo and mobile/src/theme/themes.json */
+/* Jade Palengke tokens: the same values as design/logo and mobile/src/theme/themes.json */
 :root {
   --jade: #1E8F86; --ring: #1A8178; --ink: #0A1412; --cream: #FFF6DC; --lime: #E3F08A;
   --paper: #CFEAE5; --ink2: #2E504C; --over: #B8251C; --under: #0B4A30; --night: #0F2226;
+  --dock: 76px;
 }
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0; background: var(--paper); color: var(--ink);
-  font: 400 1.0625rem/1.55 "Bricolage Grotesque", system-ui, sans-serif;
-  font-variant-numeric: tabular-nums;
+  font: 400 1.0625rem/1.55 "Bricolage Grotesque", system-ui, sans-serif; font-variant-numeric: tabular-nums;
 }
 a { color: inherit; }
 :focus-visible { outline: 3px solid var(--lime); outline-offset: 3px; border-radius: 6px; }
-.wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+p { margin: 0; }
 
-/* hero: the logo's jade field with its tone-on-tone coin rings (56px half-drop grid) */
+/* a word cut out as a sticker, like the logo: cream die-cut edge, ink outline, hard offset shadow */
+.cut {
+  position: relative; display: inline-block; isolation: isolate; white-space: nowrap;
+  font-weight: 800; line-height: 1; letter-spacing: 0.02em; color: var(--ink); text-shadow: var(--edge);
+}
+/* rings of text-shadow give the round joins of a real die cut (text-stroke draws miter spikes) */
+.cut::before, .cut::after { content: attr(data-t); position: absolute; left: 0; top: 0; color: var(--ink); text-shadow: var(--outline); }
+.cut::before { z-index: -1; }
+.cut::after { z-index: -2; transform: translate(0.06em, 0.07em); }
+
+/* hero: the budget, huge, on the logo's coin-ring field */
 .hero {
   --rings: radial-gradient(circle, transparent 8.5px, var(--ring) 9px 13.5px, transparent 14px);
   background: var(--rings) 0 0 / 56px 112px, var(--rings) 28px 56px / 56px 112px, var(--jade);
-  padding: 40px 0 72px;
+  overflow: hidden; padding: 28px 0 56px;
 }
-.hero .wrap { display: grid; gap: 40px; grid-template-columns: minmax(0, 1fr) minmax(0, 460px); align-items: center; }
-.logo { display: block; width: min(420px, 88%); height: auto; transform: rotate(-3deg); margin: 0 0 20px -10px; }
-h1 { font-weight: 800; font-size: clamp(2.25rem, 5.2vw, 3.6rem); line-height: 1.02; letter-spacing: -0.02em; margin: 0 0 18px; color: var(--ink); max-width: 13ch; }
-.lede { font-size: 1.1875rem; max-width: 34ch; margin: 0 0 28px; color: var(--ink); }
+.budget { position: relative; margin: 0 0 0 -0.04em; padding: 0 3vw; }
+.budget-num { display: block; font-weight: 800; font-size: clamp(7rem, 31vw, 26rem); line-height: 0.82; letter-spacing: -0.045em; color: var(--ink); }
+.budget .logo { position: absolute; width: clamp(180px, 34vw, 470px); height: auto; right: 4vw; top: 52%; transform: rotate(-7deg); }
+.hero-copy { padding: 22px 5vw 0; max-width: 720px; }
+.hero-copy h1 { font-weight: 800; font-size: clamp(1.5rem, 3.2vw, 2.25rem); line-height: 1.12; margin: 0 0 12px; max-width: 22ch; }
+.hero-copy p { font-size: 1.125rem; max-width: 44ch; }
+
+/* the aisle: one shelf per item, stickers placed by eye */
+.aisle { padding: 40px 0 24px; }
+.shelf { position: relative; padding: 34px 5vw 38px; border-bottom: 3px solid var(--ink); }
+.shelf:last-child { border-bottom: 0; }
+.shelf .cut { font-size: calc(var(--s) * min(4.4rem, 8.6vw)); margin-left: var(--x); rotate: var(--r); }
+.tag { display: inline-block; vertical-align: top; margin: 0 0 0 0.6rem; background: var(--lime); border: 2px solid var(--ink); border-radius: 6px; padding: 1px 8px; font-weight: 800; font-size: 1.0625rem; rotate: 4deg; }
+.shelf p { margin: 30px 0 0 var(--tx); max-width: 40ch; font-size: 1.0625rem; color: var(--ink); }
+.shelf.in .tag { background: var(--ink); color: var(--lime); }
+
+/* checkout: the cart as a pile of stickers */
+.checkout { background: var(--night); color: var(--cream); padding: 64px 5vw calc(56px + var(--dock) + 16px); }
+.checkout h2 { font-weight: 800; font-size: clamp(2rem, 5vw, 3.4rem); line-height: 1; margin: 0 0 10px; }
+.checkout > p { max-width: 46ch; color: #C9DCD8; }
+.pile { display: flex; flex-wrap: wrap; align-items: center; gap: 18px 26px; padding: 34px 0 30px; min-height: 120px; }
+.pile button { border: 0; background: none; padding: 6px; cursor: pointer; font: inherit; }
+.pile .cut { font-size: calc(var(--s) * min(3.2rem, 7vw)); rotate: var(--r); }
+.pile-empty { color: #C9DCD8; font-weight: 600; }
+.out { display: flex; flex-wrap: wrap; gap: 14px 28px; align-items: center; border-top: 2px solid #2C4C4A; padding-top: 26px; }
 .button {
   display: inline-block; font-weight: 800; font-size: 1.0625rem; text-decoration: none;
-  background: var(--ink); color: var(--lime); padding: 14px 22px; border-radius: 16px;
-  border: 3px solid var(--ink); box-shadow: 4px 4px 0 var(--cream);
+  background: var(--lime); color: var(--ink); padding: 13px 20px; border-radius: 14px;
+  border: 3px solid var(--ink); box-shadow: 0 0 0 3px var(--cream), 5px 5px 0 3px var(--cream);
 }
-.button:hover { transform: translate(-1px, -1px); box-shadow: 5px 5px 0 var(--cream); }
-.button:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--cream); }
-.note { margin: 14px 0 0; font-size: 0.9375rem; color: var(--ink); }
+.small { font-size: 0.9375rem; color: #C9DCD8; max-width: 52ch; }
+.small a { color: var(--lime); }
 
-/* the demo: a run screen as a sticker card */
-.run {
-  background: var(--cream); border: 3px solid var(--ink); border-radius: 24px;
-  box-shadow: 7px 7px 0 var(--ink); padding: 20px; transform: rotate(1deg);
+/* the wallet, docked: spends as you walk the aisle */
+.dock {
+  position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 5; min-height: var(--dock);
+  display: flex; align-items: center; gap: 14px 18px; padding: 10px 16px;
+  background: var(--cream); border: 3px solid var(--ink); border-radius: 18px; box-shadow: 5px 5px 0 var(--ink);
+  max-width: 980px; margin: 0 auto;
 }
-.run-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
-.run-store { font-weight: 800; font-size: 1rem; background: var(--ink); color: var(--cream); padding: 3px 12px; border-radius: 99px; }
-.run-hint { font-size: 0.875rem; color: var(--ink2); }
-.left { margin: 14px 0 2px; font-weight: 800; font-size: 3rem; line-height: 1; letter-spacing: -0.02em; }
-.status { margin: 6px 0 14px; font-weight: 800; font-size: 1rem; }
-.status.under { color: var(--under); } .status.over { color: var(--over); }
-.of { font-weight: 600; color: var(--ink2); font-size: 0.9375rem; margin-left: 6px; }
-
-.cart {
-  height: 196px; border: 2px dashed var(--ink2); border-radius: 16px; padding: 10px;
-  display: flex; flex-wrap: wrap; align-content: flex-start; gap: 8px; overflow: hidden; background: #fff;
-}
-.cart-empty { margin: auto; color: var(--ink2); font-weight: 600; text-align: center; }
-.sticker {
-  position: relative; display: grid; place-items: center; border: 0; padding: 0; cursor: pointer;
-  background: #fff; border-radius: 12px; outline: 2px solid var(--ink); outline-offset: -2px;
-  box-shadow: 0 0 0 4px #fff, 0 0 0 6px var(--ink), 4px 4px 0 6px var(--ink);
-  margin: 7px; font: inherit; color: var(--ink);
-}
-.sticker .em { line-height: 1; }
-.sticker .px { position: absolute; left: 4px; bottom: 3px; font-weight: 800; font-size: 12px; background: var(--lime); padding: 0 4px; border-radius: 4px; }
-
-.wallet { margin-top: 14px; min-height: 64px; }
-.wallet-label { font-size: 0.875rem; font-weight: 600; color: var(--ink2); margin: 0 0 6px; }
-.cash { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-.bill { width: 58px; height: 30px; border-radius: 5px; border: 2px solid var(--ink); display: grid; place-items: center; font-weight: 800; font-size: 0.875rem; }
-.coin { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--ink); background: #BFC3C7; display: grid; place-items: center; font-weight: 800; font-size: 0.6875rem; }
+.dock-num { font-weight: 800; font-size: 1.75rem; line-height: 1; white-space: nowrap; }
+.dock-st { font-weight: 800; font-size: 0.9375rem; white-space: nowrap; }
+.dock-st.under { color: var(--under); } .dock-st.over { color: var(--over); }
+.cash { display: flex; gap: 6px; align-items: center; margin-left: auto; overflow: hidden; flex-wrap: nowrap; }
+.bill { flex: none; width: 54px; height: 30px; border-radius: 5px; border: 2px solid var(--ink); display: grid; place-items: center; font-weight: 800; font-size: 0.875rem; }
+.coin { flex: none; width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--ink); background: #BFC3C7; display: grid; place-items: center; font-weight: 800; font-size: 0.6875rem; }
 .coin.c20 { box-shadow: inset 0 0 0 4px #B8873B; }
 .iou {
-  background: #fff; border: 2px solid var(--ink); padding: 10px 14px; font-weight: 800; color: var(--over);
-  clip-path: polygon(0 0, 100% 0, 100% 82%, 96% 100%, 92% 82%, 88% 100%, 84% 82%, 80% 100%, 76% 82%, 72% 100%, 68% 82%, 64% 100%, 60% 82%, 56% 100%, 52% 82%, 48% 100%, 44% 82%, 40% 100%, 36% 82%, 32% 100%, 28% 82%, 24% 100%, 20% 82%, 16% 100%, 12% 82%, 8% 100%, 4% 82%, 0 100%);
-  padding-bottom: 18px; transform: rotate(-1.5deg);
+  margin-left: auto; background: #fff; border: 2px solid var(--ink); padding: 6px 14px 14px; font-weight: 800; color: var(--over); white-space: nowrap; rotate: -2deg;
+  clip-path: polygon(0 0, 100% 0, 100% 78%, 95% 100%, 90% 78%, 85% 100%, 80% 78%, 75% 100%, 70% 78%, 65% 100%, 60% 78%, 55% 100%, 50% 78%, 45% 100%, 40% 78%, 35% 100%, 30% 78%, 25% 100%, 20% 78%, 15% 100%, 10% 78%, 5% 100%, 0 78%);
 }
 
-.shelf-label { margin: 18px 0 8px; font-weight: 600; font-size: 0.9375rem; }
-.shelf { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.item {
-  display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 6px 10px; text-align: left;
-  border: 2px solid var(--ink); border-radius: 12px; background: #fff; color: var(--ink);
-  font: 600 0.9375rem/1.2 inherit; font-family: inherit; cursor: pointer;
-}
-.item .price { margin-left: auto; font-weight: 800; }
-.item[aria-pressed="true"] { background: var(--ink); color: var(--cream); }
-.item[aria-pressed="true"] .price { color: var(--lime); }
-
-/* below the fold: quiet */
-section { padding: 72px 0; }
-h2 { font-weight: 800; font-size: clamp(1.75rem, 3.4vw, 2.4rem); line-height: 1.1; letter-spacing: -0.01em; margin: 0 0 32px; max-width: 20ch; }
-.steps { list-style: none; counter-reset: step; padding: 0; margin: 0; display: grid; gap: 28px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.steps li { counter-increment: step; }
-.steps li::before {
-  content: counter(step); display: grid; place-items: center; width: 44px; height: 44px; margin-bottom: 14px;
-  border-radius: 50%; background: var(--jade); color: var(--ink); font-weight: 800; font-size: 1.25rem;
-  border: 3px solid var(--ink); box-shadow: 0 0 0 4px var(--cream), 0 0 0 6px var(--ink);
-}
-h3 { font-weight: 800; font-size: 1.25rem; margin: 0 0 6px; }
-.steps p, .facts p { margin: 0; max-width: 36ch; color: var(--ink2); }
-.facts { display: grid; gap: 28px; grid-template-columns: repeat(2, minmax(0, 1fr)); border-top: 2px solid var(--ink); padding-top: 32px; margin-top: 56px; }
-
-footer { background: var(--night); color: var(--cream); padding: 36px 0 44px; font-size: 0.9375rem; }
-footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 32px; justify-content: space-between; align-items: center; }
-footer p { margin: 0; max-width: 60ch; }
-footer a { color: var(--lime); }
-
-@media (max-width: 880px) {
-  .hero .wrap { grid-template-columns: minmax(0, 1fr); }
-  .run { transform: none; }
-  .steps, .facts { grid-template-columns: minmax(0, 1fr); }
-}
-@media (max-width: 420px) {
-  .shelf { grid-template-columns: minmax(0, 1fr); }
-  .left { font-size: 2.5rem; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .button:hover, .button:active { transform: none; }
+@media (max-width: 640px) {
+  :root { --dock: 92px; }
+  .dock { flex-wrap: wrap; gap: 6px 12px; }
+  .cash { margin-left: 0; width: 100%; }
+  .iou { margin-left: 0; }
+  /* the budget must stay readable: the logo sticks just under the number instead of on it */
+  .budget .logo { position: relative; display: block; top: auto; right: auto; width: 74vw; margin: -4vw 0 0 auto; }
+  .shelf p { margin-left: 0; }
 }
 </style>
 </head>
 <body>
 <header class="hero">
-  <div class="wrap">
-    <div>
-      <img class="logo" src="logo.svg" width="560" height="320" alt="yaga">
-      <h1>Snap the price tag. Watch your budget.</h1>
-      <p class="lede">yaga is a grocery budget app for the supermarket aisle. Photograph an item with its price tag and it joins your cart as a sticker, sized by what it costs. What's left of your budget stays in view as peso bills and coins.</p>
-      <a class="button" href="https://github.com/GeneGulanesJr/YetAnotherGroceryApp">Follow the build on GitHub</a>
-      <p class="note">The Android app is in development. No sign-up, no ads.</p>
-    </div>
-
-    <div class="run" id="demo" aria-label="Try the cart">
-      <div class="run-head">
-        <span class="run-store">SaveMore</span>
-        <span class="run-hint">Budget ₱700</span>
-      </div>
-      <p class="left" id="left">₱0.00</p>
-      <p class="status" id="status" aria-live="polite"></p>
-      <div class="cart" id="cart"></div>
-      <div class="wallet" id="wallet"></div>
-      <p class="shelf-label" id="shelf-label">Tap an item to put it in the cart. Tap again to take it out.</p>
-      <div class="shelf" id="shelf" role="group" aria-labelledby="shelf-label"></div>
-    </div>
+  <div class="budget" aria-hidden="true">
+    <span class="budget-num">₱700</span>
+    <img class="logo" src="logo.svg" width="560" height="320" alt="">
+  </div>
+  <div class="hero-copy">
+    <h1>yaga is a grocery budget app. This is your budget for today's run.</h1>
+    <p>Six things on the list. Scroll down the aisle: each one you pass goes in the cart, and the wallet at the bottom of the screen pays for it, the way the app shows a run.</p>
   </div>
 </header>
 
 <main>
-  <section>
-    <div class="wrap">
-      <h2>Built for one hand in a busy aisle</h2>
-      <ol class="steps">
-        <li><h3>Snap the item with its price tag</h3><p>One photo reads the barcode and the shelf price. You check the number before it counts.</p></li>
-        <li><h3>It joins your cart as a sticker</h3><p>A bigger price makes a bigger sticker, so the expensive things stand out at a glance.</p></li>
-        <li><h3>Your budget shows as cash</h3><p>See the bills and coins you have left, or an IOU slip with the amount once you go over.</p></li>
-      </ol>
-      <div class="facts">
-        <div><h3>Works with no signal</h3><p>Everything is saved on your phone first, so the freezer aisle with zero bars is fine. Syncing to the web dashboard is optional.</p></div>
-        <div><h3>Pesos first</h3><p>Prices in pesos and centavos, a budget per run, and receipts checked against the shelf prices you snapped.</p></div>
-      </div>
+  <section class="aisle" aria-label="The aisle" id="aisle"></section>
+
+  <section class="checkout" aria-labelledby="co">
+    <h2 id="co">Checkout</h2>
+    <p id="co-line">This is the cart, each sticker as big as what it costs. Tap one to put it back on the shelf.</p>
+    <div class="pile" id="pile"></div>
+    <div class="out">
+      <a class="button" href="https://github.com/GeneGulanesJr/YetAnotherGroceryApp">Follow the build on GitHub</a>
+      <p class="small">The Android app is in development. No sign-up and no ads; your lists and prices stay on your phone. yaga is short for YetAnotherGroceryApp. Set in Bricolage Grotesque (SIL Open Font License).</p>
     </div>
   </section>
 </main>
 
-<footer>
-  <div class="wrap">
-    <p>yaga is short for YetAnotherGroceryApp. Source and progress on <a href="https://github.com/GeneGulanesJr/YetAnotherGroceryApp">GitHub</a>.</p>
-    <p>Set in Bricolage Grotesque (SIL Open Font License).</p>
-  </div>
-</footer>
+<div class="dock" role="status" aria-live="polite" aria-label="Wallet">
+  <div><div class="dock-num" id="dnum">₱700.00</div><div class="dock-st under" id="dst">✓ natira</div></div>
+  <div id="dcash" class="cash"></div>
+</div>
 
 <script>
-// Demo of the run screen: stickers sized by price (area ∝ price), budget left as bills and coins, IOU when over.
+// The page is the run: shelves passed above mid-screen are in the cart, minus what checkout put back.
 const BUDGET = 70000; // centavos
 const ITEMS = [
-  { id: "bigas", name: "Bigas 5kg", em: "🍚", price: 28500 },
-  { id: "itlog", name: "Itlog, 1 tray", em: "🥚", price: 23000 },
-  { id: "kape", name: "Kape 3-in-1", em: "☕", price: 16000 },
-  { id: "gatas", name: "Fresh milk 1L", em: "🥛", price: 8950 },
-  { id: "pechay", name: "Pechay", em: "🥬", price: 3500 },
-  { id: "sardinas", name: "Sardinas", em: "🐟", price: 2700 },
+  { id: "bigas", name: "Bigas", price: 28500, x: "2%", tx: "3%", r: "-2deg", line: "Point the camera at the 5 kg sack and its shelf tag. One photo reads both the barcode and the price." },
+  { id: "itlog", name: "Itlog", price: 23000, x: "34%", tx: "36%", r: "1.5deg", line: "You check the price before it counts. If the tag is blurry, the app asks for a retake instead of guessing." },
+  { id: "kape", name: "Kape", price: 16000, x: "12%", tx: "13%", r: "-1deg", line: "It joins the cart as a sticker. The more it costs, the more room it takes, so the big spends stand out." },
+  { id: "gatas", name: "Gatas", price: 8950, x: "52%", tx: "40%", r: "2.5deg", line: "No signal by the dairy fridge is fine. Everything saves on your phone first; syncing is optional." },
+  { id: "pechay", name: "Pechay", price: 3500, x: "22%", tx: "22%", r: "-3deg", line: "What you have left stays in view as the bills and coins you would still have in your wallet." },
+  { id: "sardinas", name: "Sardinas", price: 2700, x: "44%", tx: "30%", r: "1deg", line: "Go over and the wallet turns into an IOU slip with the exact amount. The sardines did it." },
 ];
-const BILLS = [100000, 50000, 20000, 10000, 5000];
+const BILLS = [100000, 50000, 20000, 10000, 5000], COINS = [2000, 1000, 500, 100, 25];
 const BILL_COLOR = { 100000: ["#3E8FD0", "#fff"], 50000: ["#F2C230", "#0A1412"], 20000: ["#4FA04A", "#0A1412"], 10000: ["#8E6BB0", "#fff"], 5000: ["#D2383C", "#fff"] };
-const COINS = [2000, 1000, 500, 100, 25];
-const inCart = new Set(["itlog", "pechay", "sardinas"]);
 const peso = (c) => "₱" + (Math.abs(c) / 100).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const short = (c) => peso(c).replace(".00", "");
+const size = (i) => Math.sqrt(i.price / 10000).toFixed(3); // sticker area follows price
 const $ = (id) => document.getElementById(id);
+// sticker edge (cream, 0.11em) and outline (ink, 0.16em) as 24-point rings of text-shadow
+const ring = (r, c) => Array.from({ length: 24 }, (_, n) => { const a = (n / 24) * 2 * Math.PI; return (r * Math.cos(a)).toFixed(3) + "em " + (r * Math.sin(a)).toFixed(3) + "em 0 " + c; }).join(",");
+document.documentElement.style.setProperty("--edge", ring(0.055, "var(--cream)") + "," + ring(0.11, "var(--cream)"));
+document.documentElement.style.setProperty("--outline", ring(0.08, "var(--ink)") + "," + ring(0.16, "var(--ink)"));
+const putBack = new Set();
+let passed = new Set();
 
-function breakDown(c) {
+function cutWord(i) { return '<span class="cut" data-t="' + i.name + '" style="--s:' + size(i) + ";--r:" + i.r + '">' + i.name + "</span>"; }
+
+$("aisle").innerHTML = ITEMS.map((i) =>
+  '<div class="shelf" id="s-' + i.id + '" style="--x:' + i.x + ";--tx:" + i.tx + '">' + cutWord(i) +
+  '<span class="tag">' + short(i.price) + "</span><p>" + i.line + "</p></div>").join("");
+
+function cash(left) {
   const out = [];
-  for (const v of [...BILLS, ...COINS]) while (c >= v && out.length < 14) { out.push(v); c -= v; }
-  return out;
+  for (const v of [...BILLS, ...COINS]) while (left >= v && out.length < 12) { out.push(v); left -= v; }
+  return out.map((v) => v >= 5000
+    ? '<span class="bill" style="background:' + BILL_COLOR[v][0] + ";color:" + BILL_COLOR[v][1] + '">' + v / 100 + "</span>"
+    : '<span class="coin' + (v === 2000 ? " c20" : "") + '">' + (v >= 100 ? v / 100 : v + "¢") + "</span>").join("");
 }
 
 function render() {
-  const cart = ITEMS.filter((i) => inCart.has(i.id));
-  const spent = cart.reduce((s, i) => s + i.price, 0);
-  const left = BUDGET - spent;
-  $("left").textContent = left < 0 ? "−" + peso(left) : peso(left);
-  const st = $("status");
-  st.className = "status " + (left < 0 ? "over" : "under");
-  st.innerHTML = (left < 0 ? "▲ Lampas " + peso(left) : "✓ " + peso(left) + " natira") + '<span class="of">of ' + peso(BUDGET) + "</span>";
+  const cart = ITEMS.filter((i) => passed.has(i.id) && !putBack.has(i.id));
+  const left = BUDGET - cart.reduce((s, i) => s + i.price, 0);
+  $("dnum").textContent = (left < 0 ? "−" : "") + peso(left);
+  $("dst").className = "dock-st " + (left < 0 ? "over" : "under");
+  $("dst").textContent = left < 0 ? "▲ Lampas " + peso(left) : "✓ natira, of " + peso(BUDGET);
+  const dc = $("dcash");
+  if (left < 0) { dc.className = "iou"; dc.textContent = "IOU " + peso(left); }
+  else { dc.className = "cash"; dc.innerHTML = cash(left); dc.setAttribute("aria-label", peso(left) + " left"); }
+  for (const i of ITEMS) $("s-" + i.id).classList.toggle("in", passed.has(i.id) && !putBack.has(i.id));
 
-  // area proportional to price; scale so the stickers fill about half the box
-  const box = $("cart");
-  const area = (box.clientWidth - 20) * (box.clientHeight - 20) * 0.42;
-  let k = Math.min(1.1, Math.sqrt(area / Math.max(1, spent)));
-  const side = (i) => Math.max(52, Math.round(k * Math.sqrt(i.price)));
-  box.replaceChildren(...(cart.length ? cart.map((i, n) => {
-    const b = document.createElement("button");
-    b.className = "sticker";
-    b.dataset.price = i.price;
-    b.style.width = b.style.height = side(i) + "px";
-    b.style.rotate = [-2.5, 1.8, -1.2, 2.4, -1.8, 1.2][n % 6] + "deg";
-    b.innerHTML = '<span class="em" style="font-size:' + Math.round(side(i) * 0.42) + 'px" aria-hidden="true">' + i.em + '</span><span class="px">' + peso(i.price).replace(".00", "") + "</span>";
-    b.setAttribute("aria-label", "Remove " + i.name + ", " + peso(i.price));
-    b.onclick = () => toggle(i.id);
-    return b;
-  }) : [Object.assign(document.createElement("p"), { className: "cart-empty", textContent: "Your cart is empty." })]));
-  // the box never grows: shrink every sticker until the last one fits (narrow phones wrap sooner)
-  const bottom = () => box.getBoundingClientRect().bottom - 8;
-  for (let t = 0; t < 12 && cart.length && box.lastChild.getBoundingClientRect().bottom > bottom(); t++) {
-    k *= 0.88;
-    for (const s of box.children) {
-      s.style.width = s.style.height = Math.max(52, Math.round(k * Math.sqrt(+s.dataset.price))) + "px";
-      s.firstChild.style.fontSize = Math.round(parseInt(s.style.width) * 0.42) + "px";
-    }
-  }
-
-  const w = $("wallet");
-  if (left < 0) {
-    w.innerHTML = '<div class="iou">IOU ' + peso(left) + "</div>";
-  } else {
-    const cash = breakDown(left).map((v) => v >= 5000
-      ? '<span class="bill" style="background:' + BILL_COLOR[v][0] + ";color:" + BILL_COLOR[v][1] + '">' + v / 100 + "</span>"
-      : '<span class="coin' + (v === 2000 ? " c20" : "") + '">' + (v >= 100 ? v / 100 : v + "¢") + "</span>").join("");
-    w.innerHTML = '<p class="wallet-label">Still in your wallet</p><div class="cash" aria-label="' + peso(left) + ' left">' + cash + "</div>";
-  }
-
-  for (const btn of $("shelf").children) btn.setAttribute("aria-pressed", inCart.has(btn.dataset.id));
+  const pile = $("pile");
+  const shown = ITEMS.filter((i) => passed.has(i.id));
+  pile.innerHTML = shown.length ? shown.map((i) => {
+    const back = putBack.has(i.id);
+    return '<button type="button" data-id="' + i.id + '" aria-pressed="' + !back + '" aria-label="' + (back ? "Put " + i.name + " back in the cart" : "Put " + i.name + " back on the shelf") + ", " + peso(i.price) + '" style="opacity:' + (back ? 0.35 : 1) + '">' + cutWord(i) + "</button>";
+  }).join("") : '<p class="pile-empty">The cart is empty. Walk the aisle first.</p>';
+  $("co-line").textContent = left < 0
+    ? "This is the cart, each sticker as big as what it costs. You are " + peso(left) + " over: tap a sticker to put it back on the shelf."
+    : "This is the cart, each sticker as big as what it costs. Tap one to put it back, or tap it again to keep it.";
 }
 
-function toggle(id) { inCart.has(id) ? inCart.delete(id) : inCart.add(id); render(); }
+$("pile").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-id]"); if (!b) return;
+  const id = b.dataset.id; putBack.has(id) ? putBack.delete(id) : putBack.add(id); render();
+});
 
-$("shelf").append(...ITEMS.map((i) => {
-  const b = document.createElement("button");
-  b.className = "item"; b.dataset.id = i.id;
-  b.innerHTML = '<span aria-hidden="true">' + i.em + "</span><span>" + i.name + '</span><span class="price">' + peso(i.price) + "</span>";
-  b.onclick = () => toggle(i.id);
-  return b;
-}));
-render();
-addEventListener("resize", render);
+let queued = false;
+function onScroll() {
+  if (queued) return; queued = true;
+  requestAnimationFrame(() => {
+    queued = false;
+    const mid = innerHeight * 0.55;
+    const now = new Set(ITEMS.filter((i) => $("s-" + i.id).getBoundingClientRect().top < mid).map((i) => i.id));
+    if ([...now].join() !== [...passed].join()) { passed = now; render(); }
+  });
+}
+addEventListener("scroll", onScroll, { passive: true });
+addEventListener("resize", onScroll);
+render(); onScroll();
 </script>
 </body>
 </html>
