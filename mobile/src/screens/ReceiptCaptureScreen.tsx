@@ -72,6 +72,7 @@ export function ReceiptCaptureScreen({ navigation }: ReceiptProps) {
   const [permission, requestPermission] = useCameraPermissions();
   const [phase, setPhase] = useState<Phase>({ step: "camera" });
   const cameraRef = useRef<CameraView>(null);
+  const capturing = useRef(false);
   const currency = getDefaultCurrency(getDatabase());
   const t = useTokens();
 
@@ -109,13 +110,17 @@ export function ReceiptCaptureScreen({ navigation }: ReceiptProps) {
   };
 
   const capture = async () => {
-    setPhase({ step: "processing" });
+    if (capturing.current) {
+      return;
+    }
+    capturing.current = true;
     try {
+      // CameraView must stay mounted until the photo resolves: unmounting aborts the capture.
       const photo = await cameraRef.current?.takePictureAsync({ quality: 0.95 });
       if (photo === undefined || photo === null) {
-        setPhase({ step: "camera" });
         return;
       }
+      setPhase({ step: "processing" });
       const { record } = await ingestImage(getDatabase(), photo.uri);
       const ocr = await runOcr(record.localUri ?? photo.uri);
       if (ocr === null) {
@@ -149,6 +154,8 @@ export function ReceiptCaptureScreen({ navigation }: ReceiptProps) {
       });
     } catch {
       setPhase({ step: "camera" });
+    } finally {
+      capturing.current = false;
     }
   };
 

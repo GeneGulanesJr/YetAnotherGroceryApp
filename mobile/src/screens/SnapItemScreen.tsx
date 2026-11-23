@@ -64,6 +64,7 @@ export function SnapItemScreen({ navigation }: SnapItemProps) {
   const [torchOn, setTorchOn] = useState(false);
   const [liveCode, setLiveCode] = useState<Scan | null>(null);
   const cameraRef = useRef<CameraView>(null);
+  const capturing = useRef(false);
 
   useHardwareBack(phase.step !== "camera" && phase.step !== "processing", () =>
     setPhase(phase.step === "scanBarcode" ? { step: "review", shot: phase.shot } : { step: "camera" }),
@@ -89,14 +90,18 @@ export function SnapItemScreen({ navigation }: SnapItemProps) {
   };
 
   const capture = async () => {
+    if (capturing.current) {
+      return;
+    }
+    capturing.current = true;
     const seenLive = liveCode;
-    setPhase({ step: "processing" });
     try {
+      // CameraView must stay mounted until the photo resolves: unmounting aborts the capture.
       const photo = await cameraRef.current?.takePictureAsync({ quality: 0.95 });
       if (photo === undefined || photo === null) {
-        setPhase({ step: "camera" });
         return;
       }
+      setPhase({ step: "processing" });
       const [still, { record }] = await Promise.all([
         // Full-resolution still for barcode detail; Expo Go / iOS non-QR yield [].
         scanFromURLAsync(photo.uri, [...SCAN_BARCODE_TYPES]).catch((): Scan[] => []),
@@ -109,6 +114,8 @@ export function SnapItemScreen({ navigation }: SnapItemProps) {
       setPhase({ step: "review", shot: { image: record, ocr, codes, code: codes[0] ?? null } });
     } catch (cause) {
       setPhase({ step: "error", message: cause instanceof Error ? cause.message : "Capture failed" });
+    } finally {
+      capturing.current = false;
     }
   };
 
