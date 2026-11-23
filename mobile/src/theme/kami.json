@@ -1,0 +1,32 @@
+{
+  "light": {
+    "paper": "#f5f4ed",
+    "card": "#faf9f5",
+    "sand": "#e8e6dc",
+    "line": "#e8e6dc",
+    "ink": "#141413",
+    "ink2": "#504e49",
+    "ink3": "#6b6a64",
+    "brand": "#1B365D",
+    "brandText": "#1B365D",
+    "onBrand": "#faf9f5",
+    "tint": "#E4ECF5",
+    "cautionBg": "#f0e0d8",
+    "cautionFg": "#8b4513"
+  },
+  "dark": {
+    "paper": "#141413",
+    "card": "#30302e",
+    "sand": "#3d3d3a",
+    "line": "#3d3d3a",
+    "ink": "#faf9f5",
+    "ink2": "#d1cfc5",
+    "ink3": "#a3a199",
+    "brand": "#2D5A8A",
+    "brandText": "#9DB7D5",
+    "onBrand": "#faf9f5",
+    "tint": "#1f2d40",
+    "cautionBg": "#3b2a20",
+    "cautionFg": "#e3b394"
+  }
+}

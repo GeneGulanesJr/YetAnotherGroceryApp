@@ -1,9 +1,11 @@
 import { useCallback, useState } from "react";
-import { FlatList, Modal, Pressable, Text, View } from "react-native";
+import { FlatList, Pressable, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 
 import { ScreenContainer } from "../components/ScreenContainer";
-import { EmptyState, PrimaryButton } from "../components/ui";
+import { EmptyState, FullScreenModal, PrimaryButton, Text } from "../components/ui";
+import { useTokens } from "../theme/tokens";
 import { getDatabase } from "../db/database";
 import { getDefaultCurrency } from "../db/repositories/meta";
 import { listReceipts, type ReceiptSummaryLine } from "../db/repositories/receipts";
@@ -30,89 +32,85 @@ export function HistoryScreen() {
   useFocusEffect(refresh);
 
   const currency = trips[0]?.currency ?? getDefaultCurrency(getDatabase());
+  const t = useTokens();
 
   return (
     <ScreenContainer>
-      <View className="flex-1 px-6 py-8">
-        <Text className="text-2xl font-bold text-slate-900 dark:text-slate-50">History</Text>
-        <Text className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          Completed trips and purchases — all offline.
-        </Text>
-
-        <FlatList
-          data={trips}
-          keyExtractor={(trip) => trip.id}
-          className="mt-4 flex-1"
-          contentContainerClassName="pb-4"
-          ListEmptyComponent={
-            <EmptyState
-              title="No completed trips"
-              message="Finish a shopping trip and it will show up here."
-            />
-          }
-          renderItem={({ item }) => (
-            <Pressable
-              onPress={() => setOpenTrip(item)}
-              className="mb-3 rounded-2xl bg-slate-100 p-4 dark:bg-slate-800"
-            >
-              <View className="flex-row items-center justify-between">
-                <View className="flex-1">
-                  <Text className="text-base font-semibold text-slate-900 dark:text-slate-50">
-                    {item.storeName ?? "No store"}
-                  </Text>
-                  <Text className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                    {item.startedAt.toLocaleDateString()} · {item.purchaseCount} item
-                    {item.purchaseCount === 1 ? "" : "s"}
-                  </Text>
-                </View>
-                <Text className="font-semibold text-slate-700 dark:text-slate-200">
-                  {formatMoney({
-                    amountMinor: item.totalMinor,
-                    currency: item.currency ?? currency,
-                  })}
-                </Text>
-              </View>
-            </Pressable>
-          )}
-        />
-
-        <Text className="mt-6 text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-          Receipts
-        </Text>        {receipts.length === 0 ? (
-          <Text className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Attach a receipt photo from an active trip to verify prices against
-            what you recorded on the shelf.
+      <FlatList
+        data={trips}
+        keyExtractor={(trip) => trip.id}
+        contentContainerClassName="px-5 pb-8 pt-4 flex-grow"
+        ListHeaderComponent={
+          <Text tone="secondary" className="mb-3">
+            Completed trips and receipts, stored on this phone.
           </Text>
-        ) : (
-          <View className="mt-2">
-            {receipts.map((receipt) => (
-              <View
-                key={receipt.id}
-                className="mb-2 flex-row items-center justify-between rounded-2xl bg-slate-100 px-4 py-3 dark:bg-slate-800"
-              >
-                <View className="flex-1">
-                  <Text className="text-base text-slate-900 dark:text-slate-50">
-                    {receipt.capturedAt?.toLocaleDateString() ?? "Receipt"} ·{" "}
-                    {receipt.lineCount} lines
-                  </Text>
-                  {receipt.overchargeMinor !== null && receipt.overchargeMinor > 0 ? (
-                    <Text className="text-xs font-semibold text-rose-600 dark:text-rose-400">
-                      ⚠ {(receipt.overchargeMinor / 100).toFixed(2)} over recorded shelf
-                      prices
-                    </Text>
-                  ) : null}
-                </View>
-                <Text className="font-semibold text-slate-700 dark:text-slate-200">
-                  {formatMoney({
-                    amountMinor: receipt.totalMinor ?? 0,
-                    currency: receipt.currency,
-                  })}
-                </Text>
-              </View>
-            ))}
-          </View>
+        }
+        ListEmptyComponent={
+          <EmptyState
+            icon="time-outline"
+            title="No completed trips"
+            message="Finish a shopping trip and it will show up here."
+          />
+        }
+        renderItem={({ item, index }) => (
+          <Pressable
+            onPress={() => setOpenTrip(item)}
+            accessibilityRole="button"
+            android_ripple={{ color: t.line }}
+            className={`min-h-16 flex-row items-center gap-3 py-3 ${index === trips.length - 1 ? "" : "border-b border-line dark:border-line-dark"}`}
+          >
+            <View className="flex-1">
+              <Text>{item.storeName ?? "No store"}</Text>
+              <Text variant="meta" tone="meta">
+                {item.startedAt.toLocaleDateString()} · {item.purchaseCount} item
+                {item.purchaseCount === 1 ? "" : "s"}
+              </Text>
+            </View>
+            <Text className="font-medium">
+              {formatMoney({ amountMinor: item.totalMinor, currency: item.currency ?? currency })}
+            </Text>
+          </Pressable>
         )}
-      </View>
+        ListFooterComponent={
+          <View className="mt-8">
+            <Text variant="label" tone="secondary">
+              Receipts
+            </Text>
+            {receipts.length === 0 ? (
+              <Text variant="meta" tone="meta" className="mt-1">
+                Attach a receipt photo from an active trip to check what you paid against the
+                shelf prices you recorded.
+              </Text>
+            ) : (
+              receipts.map((receipt, index) => (
+                <View
+                  key={receipt.id}
+                  className={`flex-row items-center gap-3 py-3 ${index === receipts.length - 1 ? "" : "border-b border-line dark:border-line-dark"}`}
+                >
+                  <View className="flex-1">
+                    <Text>
+                      {receipt.capturedAt?.toLocaleDateString() ?? "Receipt"} · {receipt.lineCount}{" "}
+                      lines
+                    </Text>
+                    {receipt.overchargeMinor !== null && receipt.overchargeMinor > 0 ? (
+                      <View className="mt-0.5 flex-row items-center gap-1">
+                        <Ionicons name="alert-circle-outline" size={14} color={t.cautionFg} />
+                        <Text variant="meta" tone="caution" className="font-medium">
+                          {formatMoney({ amountMinor: receipt.overchargeMinor, currency: receipt.currency })}{" "}
+                          over the shelf prices
+                        </Text>
+                      </View>
+                    ) : null}
+                  </View>
+                  <Text className="font-medium">
+                    {formatMoney({ amountMinor: receipt.totalMinor ?? 0, currency: receipt.currency })}
+                  </Text>
+                </View>
+              ))
+            )}
+          </View>
+        }
+      />
 
       {openTrip !== null ? (
         <TripDetailModal trip={openTrip} onClose={() => setOpenTrip(null)} />
@@ -121,7 +119,7 @@ export function HistoryScreen() {
   );
 }
 
-function TripDetailModal({
+export function TripDetailModal({
   trip,
   onClose,
 }: {
@@ -132,50 +130,46 @@ function TripDetailModal({
   const currency = trip.currency ?? getDefaultCurrency(getDatabase());
 
   return (
-    <Modal visible animationType="slide" onRequestClose={onClose}>
-      <View className="flex-1 bg-white px-6 py-8 dark:bg-slate-900">
-        <Text className="text-2xl font-bold text-slate-900 dark:text-slate-50">
-          {trip.storeName ?? "No store"}
-        </Text>
-        <Text className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+    <FullScreenModal onClose={onClose}>
+      <View className="flex-1 px-5 pt-6">
+        <Text variant="display">{trip.storeName ?? "No store"}</Text>
+        <Text tone="meta" className="mt-1">
           {trip.startedAt.toLocaleDateString()}
-          {trip.endedAt !== null ? ` – ${trip.endedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : ""}
+          {trip.endedAt !== null
+            ? ` – ${trip.endedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+            : ""}
         </Text>
 
         <FlatList
           data={lines}
           keyExtractor={(line) => line.id}
           className="mt-4 flex-1"
-          ListEmptyComponent={
-            <Text className="text-slate-500 dark:text-slate-400">No purchases recorded.</Text>
-          }
+          ListEmptyComponent={<Text tone="meta">No purchases recorded.</Text>}
           renderItem={({ item }) => (
-            <View className="flex-row items-center justify-between border-b border-slate-100 py-3 dark:border-slate-800">
+            <View className="flex-row items-center gap-3 border-b border-line py-3 dark:border-line-dark">
               <View className="flex-1">
-                <Text className="text-base text-slate-900 dark:text-slate-50">
-                  {item.productName}
-                </Text>
-                <Text className="text-xs text-slate-500 dark:text-slate-400">
+                <Text>{item.productName}</Text>
+                <Text variant="meta" tone="meta">
                   × {item.quantity}
                 </Text>
               </View>
-              <Text className="font-semibold text-slate-800 dark:text-slate-100">
-                {formatMoney({
-                  amountMinor: item.shelfPriceMinor * item.quantity,
-                  currency: item.currency,
-                })}
+              <Text>
+                {formatMoney({ amountMinor: item.shelfPriceMinor * item.quantity, currency: item.currency })}
               </Text>
             </View>
           )}
         />
 
-        <Text className="mt-2 text-right text-xl font-bold text-slate-900 dark:text-slate-50">
-          {formatMoney({ amountMinor: trip.totalMinor, currency })}
-        </Text>
-        <View className="mt-4">
+        <View className="flex-row items-baseline justify-between py-4">
+          <Text tone="secondary">Total</Text>
+          <Text variant="title" tone="brand">
+            {formatMoney({ amountMinor: trip.totalMinor, currency })}
+          </Text>
+        </View>
+        <View className="pb-4">
           <PrimaryButton label="Close" variant="secondary" onPress={onClose} />
         </View>
       </View>
-    </Modal>
+    </FullScreenModal>
   );
 }

@@ -18,7 +18,12 @@
       "package": "com.yetanothergroceryapp.mobile",
       "permissions": [
         "android.permission.CAMERA"
-      ]
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "monochromeImage": "./assets/adaptive-icon-monochrome.png",
+        "backgroundColor": "#f5f4ed"
+      }
     },
     "extra": {
       "eas": {
@@ -28,7 +33,34 @@
     },
     "owner": "genegulanesjrs-team",
     "plugins": [
-      "expo-font",
+      [
+        "expo-font",
+        {
+          "android": {
+            "fonts": [
+              {
+                "fontFamily": "Source Serif 4",
+                "fontDefinitions": [
+                  {
+                    "path": "./assets/fonts/SourceSerif4_400Regular.ttf",
+                    "weight": 400
+                  },
+                  {
+                    "path": "./assets/fonts/SourceSerif4_500Medium.ttf",
+                    "weight": 500
+                  }
+                ]
+              }
+            ]
+          },
+          "ios": {
+            "fonts": [
+              "./assets/fonts/SourceSerif4_400Regular.ttf",
+              "./assets/fonts/SourceSerif4_500Medium.ttf"
+            ]
+          }
+        }
+      ],
       [
         "expo-build-properties",
         {
@@ -44,7 +76,22 @@
           "photosPermission": "YetAnotherGroceryApp can access your photo library to import product photos."
         }
       ],
-      "expo-background-task"
-    ]
+      "expo-background-task",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 160,
+          "resizeMode": "contain",
+          "backgroundColor": "#f5f4ed",
+          "dark": {
+            "image": "./assets/splash-icon-dark.png",
+            "backgroundColor": "#141413"
+          }
+        }
+      ]
+    ],
+    "icon": "./assets/icon.png",
+    "backgroundColor": "#f5f4ed"
   }
 }

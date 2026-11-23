@@ -1,4 +1,4 @@
-import { DarkTheme, DefaultTheme, NavigationContainer } from "@react-navigation/native";
+import { NavigationContainer, type Theme } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useColorScheme } from "react-native";
 
@@ -9,18 +9,40 @@ import { PriceTagScreen } from "../screens/PriceTagScreen";
 import { ProductResolveScreen } from "../screens/ProductResolveScreen";
 import { ReceiptCaptureScreen } from "../screens/ReceiptCaptureScreen";
 import { ScannerScreen } from "../screens/ScannerScreen";
+import { SnapItemScreen } from "../screens/SnapItemScreen";
+import { colors, FONT_FAMILY } from "../theme/tokens";
 import { MainTabs } from "./MainTabs";
 import type { RootStackParamList } from "./types";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+
+const regular = { fontFamily: FONT_FAMILY, fontWeight: "400" } as const;
+const medium = { fontFamily: FONT_FAMILY, fontWeight: "500" } as const;
+
+/** Headers, tab bar and screen backgrounds from the Kami tokens; Kami has no bold. */
+function navigationTheme(dark: boolean): Theme {
+  const t = colors[dark ? "dark" : "light"];
+  return {
+    dark,
+    colors: {
+      primary: t.brandText,
+      background: t.paper,
+      card: t.paper,
+      text: t.ink,
+      border: t.line,
+      notification: t.cautionFg,
+    },
+    fonts: { regular, medium, bold: medium, heavy: medium },
+  };
+}
 
 export function RootNavigator() {
   const scheme = useColorScheme();
   const isDark = scheme === "dark";
 
   return (
-    <NavigationContainer theme={isDark ? DarkTheme : DefaultTheme}>
-      <Stack.Navigator>
+    <NavigationContainer theme={navigationTheme(isDark)}>
+      <Stack.Navigator screenOptions={{ headerShadowVisible: false }}>
         <Stack.Screen
           name="MainTabs"
           component={MainTabs}
@@ -34,6 +56,11 @@ export function RootNavigator() {
         <Stack.Screen
           name="Scanner"
           component={ScannerScreen}
+          options={{ headerShown: false, presentation: "fullScreenModal" }}
+        />
+        <Stack.Screen
+          name="SnapItem"
+          component={SnapItemScreen}
           options={{ headerShown: false, presentation: "fullScreenModal" }}
         />
         <Stack.Screen

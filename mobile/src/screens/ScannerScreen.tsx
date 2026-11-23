@@ -1,68 +1,61 @@
 import * as Haptics from "expo-haptics";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useRef, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { KeyboardAvoidingView, View } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { AppTextInput, PrimaryButton } from "../components/ui";
 import {
-  formatFromCameraType,
-  isProbablyBarcode,
-  SCAN_BARCODE_TYPES,
-} from "../utils/barcode";
+  CameraBar,
+  CameraButton,
+  CameraGuide,
+  CameraPermission,
+  useHardwareBack,
+} from "../components/camera";
+import { AppTextInput, PrimaryButton, Text } from "../components/ui";
+import { isProbablyBarcode, rankScannedCodes, SCAN_BARCODE_TYPES } from "../utils/barcode";
 import type { RootStackParamList } from "../navigation/types";
 
 type ScannerProps = NativeStackScreenProps<RootStackParamList, "Scanner">;
 
 /**
- * Continuous barcode scanner. Locks after the first accepted scan (spec:
- * duplicate-scan handling happens downstream in the trip flow), with a
- * manual-entry fallback for damaged labels.
+ * Live barcode scanner (fallback to Snap item). Locks after the first
+ * accepted scan (duplicate-scan handling happens downstream in the trip
+ * flow), with a typed fallback for damaged labels.
  */
 export function ScannerScreen({ navigation }: ScannerProps) {
   const [permission, requestPermission] = useCameraPermissions();
-  const [locked, setLocked] = useState(false);
   const [torchOn, setTorchOn] = useState(false);
   const [manualEntry, setManualEntry] = useState(false);
   const [manualValue, setManualValue] = useState("");
   const [manualError, setManualError] = useState<string | null>(null);
   const lockRef = useRef(false);
+  const insets = useSafeAreaInsets();
+
+  useHardwareBack(manualEntry, () => setManualEntry(false));
 
   if (permission === null) {
-    return <View className="flex-1 bg-black" />;
+    return <View className="flex-1 bg-paper-dark" />;
   }
 
   if (!permission.granted) {
     return (
-      <View className="flex-1 items-center justify-center gap-4 bg-slate-950 px-6">
-        <Text className="text-center text-xl font-semibold text-slate-50">
-          Camera access needed
-        </Text>
-        <Text className="text-center text-slate-300">
-          YetAnotherGroceryApp uses the camera only to scan barcodes so you can
-          capture prices offline in the store. Nothing is uploaded without your
-          confirmation.
-        </Text>
-        <PrimaryButton label="Allow camera" onPress={() => void requestPermission()} />
-        <Pressable onPress={() => navigation.goBack()}>
-          <Text className="text-slate-400">Cancel</Text>
-        </Pressable>
-      </View>
+      <CameraPermission
+        reason="The camera scans barcodes so you can capture prices offline in the store. Nothing is uploaded without your confirmation."
+        onRequest={() => void requestPermission()}
+        onCancel={() => navigation.goBack()}
+      />
     );
   }
 
-  const handleScan = ({ type, data }: { type: string; data: string }) => {
-    if (lockRef.current) {
-      return;
-    }
-    const format = formatFromCameraType(type);
-    if (format === "unknown" && !isProbablyBarcode(data)) {
+  const handleScan = (scan: { type: string; data: string }) => {
+    const [code] = rankScannedCodes([scan]);
+    if (lockRef.current || code === undefined) {
       return;
     }
     lockRef.current = true;
-    setLocked(true);
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    navigation.replace("ProductResolve", { barcode: data, format });
+    navigation.replace("ProductResolve", { barcode: code.data, format: code.format });
   };
 
   const submitManual = () => {
@@ -76,78 +69,57 @@ export function ScannerScreen({ navigation }: ScannerProps) {
   };
 
   return (
-    <View className="flex-1 bg-black">
+    <View className="flex-1 bg-paper-dark">
       <CameraView
         style={{ flex: 1 }}
-        onBarcodeScanned={locked ? undefined : handleScan}
+        onBarcodeScanned={handleScan}
         barcodeScannerSettings={{ barcodeTypes: [...SCAN_BARCODE_TYPES] }}
         enableTorch={torchOn}
       />
-
-      <View className="pointer-events-none absolute inset-x-0 top-24 items-center">
-        <View className="h-48 w-72 rounded-2xl border-2 border-teal-300/80" />
-        <Text className="mt-4 px-6 text-center text-slate-100">
-          Point at a product barcode (EAN / UPC / QR)
-        </Text>
-      </View>
-
-      {locked ? (
-        <Pressable
-          onPress={() => {
-            lockRef.current = false;
-            setLocked(false);
-          }}
-          className="absolute inset-x-0 bottom-40 items-center"
-        >
-          <View className="rounded-full bg-teal-600 px-5 py-2.5">
-            <Text className="font-semibold text-white">Scanned — tap to scan again</Text>
-          </View>
-        </Pressable>
-      ) : null}
-
-      <View className="absolute inset-x-0 bottom-0 flex-row justify-between gap-3 bg-black/70 px-4 pb-10 pt-4">
-        <Pressable
-          onPress={() => setTorchOn((on) => !on)}
-          className="rounded-xl bg-slate-800 px-4 py-2.5"
-        >
-          <Text className="font-medium text-slate-100">
-            {torchOn ? "🔦 Torch on" : "🔦 Torch off"}
-          </Text>
-        </Pressable>
-        <Pressable
-          onPress={() => setManualEntry((open) => !open)}
-          className="rounded-xl bg-slate-800 px-4 py-2.5"
-        >
-          <Text className="font-medium text-slate-100">Type barcode</Text>
-        </Pressable>
-        <Pressable
-          onPress={() => navigation.goBack()}
-          className="rounded-xl bg-slate-800 px-4 py-2.5"
-        >
-          <Text className="font-medium text-slate-100">Close</Text>
-        </Pressable>
-      </View>
+      <CameraGuide text="Point at a product barcode or QR code" frameClassName="h-48 w-72" />
 
       {manualEntry ? (
-        <View className="absolute inset-x-4 bottom-28 rounded-2xl bg-slate-900 p-4">
-          <Text className="mb-2 text-sm font-medium text-slate-200">
-            Enter the digits printed under the barcode:
-          </Text>
-          <AppTextInput
-            value={manualValue}
-            onChangeText={setManualValue}
-            keyboardType="number-pad"
-            placeholder="e.g. 4800017234567"
-            onSubmitEditing={submitManual}
-          />
-          {manualError !== null ? (
-            <Text className="mt-1 text-xs text-rose-400">{manualError}</Text>
-          ) : null}
-          <View className="mt-3">
+        <KeyboardAvoidingView
+          behavior="padding"
+          style={{ position: "absolute", left: 16, right: 16, bottom: insets.bottom + 120 }}
+        >
+          <View className="gap-3 rounded-lg bg-card p-4 dark:bg-card-dark">
+            <Text variant="label" tone="secondary">
+              Type the digits printed under the barcode
+            </Text>
+            <AppTextInput
+              value={manualValue}
+              onChangeText={setManualValue}
+              keyboardType="number-pad"
+              placeholder="e.g. 4800017234567"
+              onSubmitEditing={submitManual}
+              autoFocus
+            />
+            {manualError !== null ? (
+              <Text variant="meta" tone="caution">
+                {manualError}
+              </Text>
+            ) : null}
             <PrimaryButton label="Look up" onPress={submitManual} />
           </View>
-        </View>
+        </KeyboardAvoidingView>
       ) : null}
+
+      <CameraBar>
+        <CameraButton icon="close" label="Close" onPress={() => navigation.goBack()} />
+        <CameraButton
+          icon="keypad-outline"
+          label="Type"
+          active={manualEntry}
+          onPress={() => setManualEntry((open) => !open)}
+        />
+        <CameraButton
+          icon={torchOn ? "flashlight" : "flashlight-outline"}
+          label="Torch"
+          active={torchOn}
+          onPress={() => setTorchOn((on) => !on)}
+        />
+      </CameraBar>
     </View>
   );
 }

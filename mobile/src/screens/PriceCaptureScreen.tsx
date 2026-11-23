@@ -1,24 +1,29 @@
 import { useState } from "react";
-import { ScrollView, Text, View } from "react-native";
+import { ScrollView, View } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
-import { AppTextInput, Chip, Field, PrimaryButton } from "../components/ui";
+import { AppTextInput, Chip, Field, Notice, PrimaryButton, Text } from "../components/ui";
 import { getDatabase } from "../db/database";
 import { getDefaultCurrency } from "../db/repositories/meta";
 import { recordPrice } from "../db/repositories/prices";
-import { addProductToTrip, getActiveTrip } from "../db/repositories/trips";
+import {
+  addProductToTrip,
+  getActiveTrip,
+  getTripPurchases,
+  tripTotalMinor,
+} from "../db/repositories/trips";
 import type { RootStackParamList } from "../navigation/types";
-import { formatMoney, parseMoney } from "../utils/money";
+import { budgetStatus, formatMoney, parseMoney } from "../utils/money";
 
 type PriceCaptureProps = NativeStackScreenProps<RootStackParamList, "PriceCapture">;
 
 type PriceType = "regular" | "promotional" | "loyalty";
 
 /**
- * Shelf-price capture (manual entry; OCR source arrives in the next
- * milestone). Prices are always captured per product+store+time and, when a
- * trip is active, the item is added to the running trip — a duplicate scan
- * increments the quantity (spec).
+ * The save step for every shelf price: typed, or confirmed from a photo (OCR
+ * or barcode), whose raw text, confidence and source image are stored with
+ * it. Prices are captured per product+store+time and, when a trip is active,
+ * the item joins the running trip; a duplicate scan raises the quantity.
  */
 export function PriceCaptureScreen({ navigation, route }: PriceCaptureProps) {
   const { productId, barcode, prefillAmount, ocrRawText, ocrConfidence, sourceImageId } =
@@ -27,7 +32,9 @@ export function PriceCaptureScreen({ navigation, route }: PriceCaptureProps) {
   const [priceType, setPriceType] = useState<PriceType>("regular");
   const [taxIncluded, setTaxIncluded] = useState(true);
   const currency = getDefaultCurrency(getDatabase());
-  const tripActive = getActiveTrip(getDatabase()) !== undefined;
+  const activeTrip = getActiveTrip(getDatabase());
+  const tripActive = activeTrip !== undefined;
+  const spentMinor = tripActive ? tripTotalMinor(getTripPurchases(getDatabase(), activeTrip.id)) : 0;
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -75,7 +82,7 @@ export function PriceCaptureScreen({ navigation, route }: PriceCaptureProps) {
 
       setSaving(false);
       if (addedToTrip) {
-        navigation.replace("Scanner");
+        navigation.replace("SnapItem");
       } else {
         navigation.goBack();
       }
@@ -87,80 +94,97 @@ export function PriceCaptureScreen({ navigation, route }: PriceCaptureProps) {
 
   return (
     <ScrollView
-      className="flex-1 bg-white dark:bg-slate-900"
-      contentContainerClassName="px-6 py-6"
+      className="flex-1 bg-paper dark:bg-paper-dark"
+      contentContainerClassName="px-5 py-6"
       keyboardShouldPersistTaps="handled"
     >
-      <Field label={`Price (${currency})`}>
+      <Field
+        label={`Price (${currency})`}
+        hint={ocrRawText !== undefined ? `Read from the photo: ${ocrRawText}` : undefined}
+      >
         <AppTextInput
           value={amount}
           onChangeText={setAmount}
           keyboardType="decimal-pad"
           placeholder="e.g. 123.45"
-          autoFocus
+          autoFocus={prefillAmount === undefined}
         />
       </Field>
 
       <Field label="Price type">
-        <View className="flex-row flex-wrap">
-          <View className="mb-2">
-            <Chip
-              label="Regular"
-              selected={priceType === "regular"}
-              onPress={() => setPriceType("regular")}
-            />
-          </View>
-          <View className="mb-2">
-            <Chip
-              label="Promo"
-              selected={priceType === "promotional"}
-              onPress={() => setPriceType("promotional")}
-            />
-          </View>
-          <View className="mb-2">
-            <Chip
-              label="Loyalty"
-              selected={priceType === "loyalty"}
-              onPress={() => setPriceType("loyalty")}
-            />
-          </View>
+        <View className="flex-row flex-wrap gap-y-3">
+          <Chip label="Regular" selected={priceType === "regular"} onPress={() => setPriceType("regular")} />
+          <Chip label="Promo" selected={priceType === "promotional"} onPress={() => setPriceType("promotional")} />
+          <Chip label="Loyalty" selected={priceType === "loyalty"} onPress={() => setPriceType("loyalty")} />
         </View>
       </Field>
 
       <Field label="Tax included in this price?">
-        <View className="flex-row flex-wrap">
-          <View className="mb-2">
-            <Chip label="Yes" selected={taxIncluded} onPress={() => setTaxIncluded(true)} />
-          </View>
-          <View className="mb-2">
-            <Chip label="No" selected={!taxIncluded} onPress={() => setTaxIncluded(false)} />
-          </View>
+        <View className="flex-row flex-wrap gap-y-3">
+          <Chip label="Yes" selected={taxIncluded} onPress={() => setTaxIncluded(true)} />
+          <Chip label="No" selected={!taxIncluded} onPress={() => setTaxIncluded(false)} />
         </View>
       </Field>
 
       {amount.trim() !== "" ? (
-        <Text className="mb-4 text-sm text-slate-500 dark:text-slate-400">
-          Will be recorded as{" "}
-          {formatMoney(parseMoney(amount, currency))}
-        </Text>
+        <View className="mb-5 flex-row items-baseline justify-between">
+          <Text tone="secondary">Will be recorded as</Text>
+          <Text variant="title" tone="brand">
+            {formatMoney(parseMoney(amount, currency))}
+          </Text>
+        </View>
       ) : null}
 
       {tripActive ? (
-        <Text className="mb-4 text-sm font-medium text-teal-700 dark:text-teal-300">
-          An active trip is running — this item will be added to it (scanning
-          the same product again increases its quantity).
-        </Text>
+        <View className="mb-5">
+          <Notice tone="brand" icon="cart-outline">
+            A run is in progress, so this item joins it. Snapping the same product again raises its
+            quantity.
+          </Notice>
+        </View>
+      ) : null}
+
+      {activeTrip?.budgetMinor != null && parseMoney(amount, currency).amountMinor > 0 ? (
+        <BudgetAfter
+          budgetMinor={activeTrip.budgetMinor}
+          spentMinor={spentMinor + parseMoney(amount, currency).amountMinor}
+          currency={currency}
+        />
       ) : null}
 
       {error !== null ? (
-        <Text className="mb-3 text-sm text-rose-600 dark:text-rose-400">{error}</Text>
+        <View className="mb-4">
+          <Notice>{error}</Notice>
+        </View>
       ) : null}
 
       <PrimaryButton
-        label={tripActive ? "Save and scan next item" : "Save price"}
+        label={tripActive ? "Save and snap next item" : "Save price"}
         onPress={save}
         loading={saving}
       />
     </ScrollView>
+  );
+}
+
+/** What the run's budget looks like once this item is added. */
+function BudgetAfter({
+  budgetMinor,
+  spentMinor,
+  currency,
+}: {
+  budgetMinor: number;
+  spentMinor: number;
+  currency: string;
+}) {
+  const status = budgetStatus(budgetMinor, spentMinor);
+  const left = formatMoney({ amountMinor: Math.abs(status.remainingMinor), currency });
+  return (
+    <View className="mb-5 flex-row items-baseline justify-between">
+      <Text tone="secondary">{status.over ? "Over budget after this" : "Budget left after this"}</Text>
+      <Text variant="title" tone={status.over ? "caution" : "brand"}>
+        {left}
+      </Text>
+    </View>
   );
 }

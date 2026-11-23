@@ -1,9 +1,19 @@
 import { useRef, useState } from "react";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
-import { AppTextInput, PrimaryButton } from "../components/ui";
+import {
+  CameraBar,
+  CameraButton,
+  CameraGuide,
+  CameraPermission,
+  Processing,
+  Shutter,
+  useHardwareBack,
+} from "../components/camera";
+import { AppTextInput, Card, Notice, PrimaryButton, Text } from "../components/ui";
 import { ingestImage } from "../capture/images";
 import { ocrAvailable, runOcr } from "../capture/ocr";
 import {
@@ -18,7 +28,8 @@ import {
 } from "../db/repositories/receipts";
 import { getActiveTrip } from "../db/repositories/trips";
 import type { RootStackParamList } from "../navigation/types";
-import { parseMoney } from "../utils/money";
+import { useTokens } from "../theme/tokens";
+import { formatMoney, parseMoney } from "../utils/money";
 
 type ReceiptProps = NativeStackScreenProps<RootStackParamList, "ReceiptCapture">;
 
@@ -62,25 +73,21 @@ export function ReceiptCaptureScreen({ navigation }: ReceiptProps) {
   const [phase, setPhase] = useState<Phase>({ step: "camera" });
   const cameraRef = useRef<CameraView>(null);
   const currency = getDefaultCurrency(getDatabase());
+  const t = useTokens();
+
+  useHardwareBack(phase.step === "edit", () => setPhase({ step: "camera" }));
 
   if (permission === null) {
-    return <View className="flex-1 bg-black" />;
+    return <View className="flex-1 bg-paper-dark" />;
   }
 
   if (!permission.granted && phase.step === "camera") {
     return (
-      <View className="flex-1 items-center justify-center gap-4 bg-slate-950 px-6">
-        <Text className="text-center text-xl font-semibold text-slate-50">
-          Camera access needed
-        </Text>
-        <Text className="text-center text-slate-300">
-          Photograph the receipt so OCR can read the line items offline.
-        </Text>
-        <PrimaryButton label="Allow camera" onPress={() => void requestPermission()} />
-        <Pressable onPress={() => navigation.goBack()}>
-          <Text className="text-slate-400">Cancel</Text>
-        </Pressable>
-      </View>
+      <CameraPermission
+        reason="Photograph the receipt so its lines can be read on this phone, offline."
+        onRequest={() => void requestPermission()}
+        onCancel={() => navigation.goBack()}
+      />
     );
   }
 
@@ -184,61 +191,42 @@ export function ReceiptCaptureScreen({ navigation }: ReceiptProps) {
 
   if (phase.step === "camera") {
     return (
-      <View className="flex-1 bg-black">
-        <CameraView ref={cameraRef} style={{ flex: 1 }}>
-          <View className="pointer-events-none absolute inset-x-0 top-28 items-center">
-            <View className="h-72 w-72 rounded-xl border-2 border-teal-300/80" />
-            <Text className="mt-3 px-8 text-center text-slate-100">
-              Fill the frame with the receipt
-            </Text>
-          </View>
-          <View className="absolute inset-x-0 bottom-0 flex-row justify-between bg-black/70 px-6 pb-10 pt-4">
-            <Pressable onPress={() => navigation.goBack()} className="rounded-xl bg-slate-800 px-4 py-3">
-              <Text className="font-medium text-slate-100">Close</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => void capture()}
-              className="h-16 w-16 items-center justify-center rounded-full bg-white"
-            >
-              <View className="h-12 w-12 rounded-full bg-teal-600" />
-            </Pressable>
-            <Pressable onPress={startManual} className="rounded-xl bg-slate-800 px-4 py-3">
-              <Text className="font-medium text-slate-100">Manual</Text>
-            </Pressable>
-          </View>
-        </CameraView>
+      <View className="flex-1 bg-paper-dark">
+        <CameraView ref={cameraRef} style={{ flex: 1 }} />
+        <CameraGuide text="Fill the frame with the receipt" frameClassName="h-96 w-72" />
+        <CameraBar>
+          <CameraButton icon="close" label="Close" onPress={() => navigation.goBack()} />
+          <Shutter label="Take photo of receipt" onPress={() => void capture()} />
+          <CameraButton icon="create-outline" label="Type" onPress={startManual} />
+        </CameraBar>
       </View>
     );
   }
 
   if (phase.step === "processing") {
-    return (
-      <View className="flex-1 items-center justify-center gap-3 bg-slate-950">
-        <Text className="text-lg text-slate-100">Reading receipt…</Text>
-        <Text className="text-slate-400">On-device OCR — works offline</Text>
-      </View>
-    );
+    return <Processing title="Reading the receipt" />;
   }
 
   if (phase.step === "saved") {
+    const over = phase.overchargeMinor !== null && phase.overchargeMinor > 0;
     return (
-      <View className="flex-1 justify-center bg-white px-6 dark:bg-slate-900">
-        <Text className="text-3xl font-bold text-slate-900 dark:text-slate-50">
-          Receipt saved
+      <View className="flex-1 justify-center bg-paper px-5 dark:bg-paper-dark">
+        <Text variant="display">Receipt saved</Text>
+        <Text variant="title" tone="brand" className="mt-3">
+          {formatMoney({ amountMinor: phase.totalMinor, currency })}
         </Text>
-        <Text className="mt-3 text-lg text-slate-600 dark:text-slate-300">
-          Total {(phase.totalMinor / 100).toFixed(2)} {currency}
-        </Text>
-        {phase.overchargeMinor !== null && phase.overchargeMinor > 0 ? (
-          <Text className="mt-2 text-base font-semibold text-rose-600 dark:text-rose-400">
-            ⚠ Possible overcharge: {(phase.overchargeMinor / 100).toFixed(2)} {currency} vs
-            recorded shelf prices
-          </Text>
-        ) : (
-          <Text className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-            Prices matched your recorded shelf prices.
-          </Text>
-        )}
+        <View className="mt-4">
+          {over ? (
+            <Notice>
+              Possible overcharge of {formatMoney({ amountMinor: phase.overchargeMinor ?? 0, currency })}{" "}
+              against the shelf prices you recorded.
+            </Notice>
+          ) : (
+            <Notice tone="brand" icon="checkmark-circle-outline">
+              Prices matched the shelf prices you recorded.
+            </Notice>
+          )}
+        </View>
         <View className="mt-8">
           <PrimaryButton label="Done" onPress={() => navigation.goBack()} />
         </View>
@@ -255,19 +243,18 @@ export function ReceiptCaptureScreen({ navigation }: ReceiptProps) {
 
   return (
     <ScrollView
-      className="flex-1 bg-white dark:bg-slate-900"
-      contentContainerClassName="px-5 py-6 pb-12"
+      className="flex-1 bg-paper dark:bg-paper-dark"
+      contentContainerClassName="px-5 pb-12"
+      contentContainerStyle={{ paddingTop: 24 }}
       keyboardShouldPersistTaps="handled"
     >
-      <Text className="text-xl font-bold text-slate-900 dark:text-slate-50">
-        Confirm receipt lines
-      </Text>
-      <Text className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-        Tap a type label to change it. Delete junk lines — nothing is saved until you confirm.
+      <Text variant="display">Confirm receipt lines</Text>
+      <Text tone="secondary" className="mt-1">
+        Tap the type on a line to change it, and remove junk lines. Nothing is saved until you confirm.
       </Text>
 
       {phase.lines.map((line) => (
-        <View key={line.key} className="mt-3 rounded-2xl bg-slate-100 p-3 dark:bg-slate-800">
+        <Card key={line.key} className="mt-3 gap-2">
           <View className="flex-row items-center justify-between">
             <Pressable
               onPress={() =>
@@ -275,20 +262,23 @@ export function ReceiptCaptureScreen({ navigation }: ReceiptProps) {
                   lineType: TYPE_CYCLE[(TYPE_CYCLE.indexOf(line.lineType) + 1) % TYPE_CYCLE.length],
                 })
               }
-              className="rounded-full bg-teal-700 px-3 py-1"
+              accessibilityRole="button"
+              accessibilityLabel={`Line type ${line.lineType}, tap to change`}
+              hitSlop={8}
+              className="min-h-8 justify-center rounded-md bg-tint px-2.5 dark:bg-tint-dark"
             >
-              <Text className="text-xs font-semibold uppercase text-white">{line.lineType}</Text>
+              <Text variant="meta" tone="brand" className="font-medium">
+                {line.lineType}
+              </Text>
             </Pressable>
             <Pressable
-              onPress={() =>
-                setPhase({
-                  ...phase,
-                  lines: phase.lines.filter((l) => l.key !== line.key),
-                })
-              }
-              className="px-2 py-1"
+              onPress={() => setPhase({ ...phase, lines: phase.lines.filter((l) => l.key !== line.key) })}
+              accessibilityRole="button"
+              accessibilityLabel="Remove line"
+              android_ripple={{ color: t.line, borderless: true }}
+              className="h-12 w-12 items-center justify-center"
             >
-              <Text className="text-slate-400">✕ remove</Text>
+              <Ionicons name="close" size={20} color={t.ink3} />
             </Pressable>
           </View>
           <AppTextInput
@@ -296,13 +286,13 @@ export function ReceiptCaptureScreen({ navigation }: ReceiptProps) {
             onChangeText={(text) => updateLine(line.key, { description: text })}
             placeholder="Line item"
           />
-          <View className="mt-2 flex-row gap-2">
+          <View className="flex-row gap-2">
             <View className="w-20">
               <AppTextInput
                 value={line.quantity}
                 onChangeText={(text) => updateLine(line.key, { quantity: text })}
                 keyboardType="number-pad"
-                placeholder="qty"
+                placeholder="Qty"
               />
             </View>
             <View className="flex-1">
@@ -310,16 +300,17 @@ export function ReceiptCaptureScreen({ navigation }: ReceiptProps) {
                 value={line.unitPrice}
                 onChangeText={(text) => updateLine(line.key, { unitPrice: text })}
                 keyboardType="decimal-pad"
-                placeholder={`unit price (${currency})`}
+                placeholder={`Unit price (${currency})`}
               />
             </View>
           </View>
-        </View>
+        </Card>
       ))}
 
       <View className="mt-4 gap-3">
         <PrimaryButton
           label="Add line"
+          icon="add"
           variant="secondary"
           onPress={() =>
             setPhase({
@@ -334,6 +325,7 @@ export function ReceiptCaptureScreen({ navigation }: ReceiptProps) {
         <PrimaryButton label="Save receipt" onPress={save} />
         <PrimaryButton
           label="Retake photo"
+          icon="camera-reverse-outline"
           variant="secondary"
           onPress={() => setPhase({ step: "camera" })}
         />

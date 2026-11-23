@@ -2,6 +2,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { productBarcodes, products, type Product, type ProductBarcode } from "../schema";
 import { trackInsert } from "../outbox";
 import type { Executor } from "../types";
+import { barcodeLookupKeys, type ScannedFormat } from "../../utils/barcode";
 
 export interface BarcodeMatch {
   product: Product;
@@ -23,6 +24,21 @@ export function findByBarcode(db: Executor, barcode: string): BarcodeMatch | nul
     )
     .get();
   return row ?? null;
+}
+
+/** Resolves a raw scan through every alias key (UPC-A/EAN-13, UPC-E, weighed-item code). */
+export function findByScan(
+  db: Executor,
+  raw: string,
+  format: ScannedFormat,
+): BarcodeMatch | null {
+  for (const key of barcodeLookupKeys(raw, format)) {
+    const match = findByBarcode(db, key);
+    if (match !== null) {
+      return match;
+    }
+  }
+  return null;
 }
 
 export function listBarcodesForProduct(

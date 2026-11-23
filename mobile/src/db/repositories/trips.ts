@@ -70,6 +70,15 @@ export function cancelTrip(db: Db, tripId: string): Trip | undefined {
   });
 }
 
+/** Sets or clears (null) the budget of an active trip. */
+export function setTripBudget(db: Db, tripId: string, budgetMinor: number | null): Trip | undefined {
+  const trip = getTrip(db, tripId);
+  if (trip === undefined || trip.status !== "active") {
+    return undefined;
+  }
+  return trackUpdate(db, trips, tripId, { budgetMinor });
+}
+
 export function getTrip(db: Db, id: string): Trip | undefined {
   return db
     .select()

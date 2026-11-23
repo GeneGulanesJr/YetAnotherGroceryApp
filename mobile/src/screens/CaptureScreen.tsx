@@ -1,9 +1,9 @@
 import { useCallback, useState } from "react";
-import { Text, View } from "react-native";
+import { ScrollView, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
-import { AppTextInput, PrimaryButton } from "../components/ui";
+import { AppTextInput, Field, ListRow, PrimaryButton, Text } from "../components/ui";
 import { ScreenContainer } from "../components/ScreenContainer";
 import { getDatabase } from "../db/database";
 import { getPendingMutationCount } from "../db/repositories/meta";
@@ -22,57 +22,73 @@ export function CaptureScreen({ navigation }: { navigation: CaptureNavigation })
   );
   useFocusEffect(refreshPending);
 
-  const manualError =
-    manualBarcode.trim() !== "" && !isProbablyBarcode(manualBarcode.trim())
-      ? "Enter a valid barcode (6–14 digits)"
-      : null;
+  const typed = manualBarcode.trim();
+  const valid = isProbablyBarcode(typed);
 
   const lookupManual = () => {
-    if (!isProbablyBarcode(manualBarcode.trim())) {
-      return;
+    if (valid) {
+      navigation.navigate("ProductResolve", { barcode: typed });
     }
-    navigation.navigate("ProductResolve", { barcode: manualBarcode.trim() });
   };
 
   return (
     <ScreenContainer>
-      <View className="flex-1 justify-between px-6 py-8">
-        <View>
-          <Text className="text-2xl font-bold text-slate-900 dark:text-slate-50">
-            Capture
-          </Text>
-          <Text className="mt-2 text-slate-600 dark:text-slate-300">
-            Scan shelf prices as you shop. Everything is stored offline first;
-            OCR receipt capture arrives in the next milestone.
-          </Text>
-        </View>
-
-        <View className="gap-3">
-          <PrimaryButton
-            label="Scan barcode"
-            onPress={() => navigation.navigate("Scanner")}
-          />
-          <PrimaryButton
-            label="Add product without barcode"
-            variant="secondary"
-            onPress={() => navigation.navigate("ManualProduct", {})}
-          />
-          <AppTextInput
-            value={manualBarcode}
-            onChangeText={setManualBarcode}
-            keyboardType="number-pad"
-            placeholder="…or type a barcode"
-            onSubmitEditing={lookupManual}
-          />
-          {manualError !== null ? (
-            <Text className="text-xs text-rose-600 dark:text-rose-400">{manualError}</Text>
-          ) : null}
-        </View>
-
-        <Text className="text-center text-xs text-slate-400">
-          {pending} change{pending === 1 ? "" : "s"} waiting to sync
+      <ScrollView contentContainerClassName="px-5 pb-8 pt-4" keyboardShouldPersistTaps="handled">
+        <Text variant="display">Snap an item</Text>
+        <Text tone="secondary" className="mt-2">
+          One photo of the item with its price tag. The barcode and the price are read on this
+          phone, and you confirm before anything is saved.
         </Text>
-      </View>
+        <View className="mt-6">
+          <PrimaryButton
+            label="Take photo"
+            icon="camera-outline"
+            onPress={() => navigation.navigate("SnapItem")}
+          />
+        </View>
+
+        <Text variant="label" tone="secondary" className="mb-1 mt-10">
+          Other ways to add
+        </Text>
+        <ListRow
+          icon="scan-outline"
+          title="Scan barcode live"
+          detail="Then photograph or type the price"
+          onPress={() => navigation.navigate("Scanner")}
+        />
+        <ListRow
+          icon="create-outline"
+          title="Add product without barcode"
+          onPress={() => navigation.navigate("ManualProduct", {})}
+          last
+        />
+
+        <View className="mt-6">
+          <Field
+            label="Type a barcode"
+            hint={typed !== "" && !valid ? "Enter a valid barcode (6–14 digits)" : undefined}
+          >
+            <View className="flex-row gap-2">
+              <View className="flex-1">
+                <AppTextInput
+                  value={manualBarcode}
+                  onChangeText={setManualBarcode}
+                  keyboardType="number-pad"
+                  placeholder="e.g. 4800017234567"
+                  onSubmitEditing={lookupManual}
+                />
+              </View>
+              <PrimaryButton label="Look up" variant="secondary" disabled={!valid} onPress={lookupManual} />
+            </View>
+          </Field>
+        </View>
+
+        <Text variant="meta" tone="meta" className="mt-2">
+          {pending === 0
+            ? "No changes waiting to sync"
+            : `${pending} change${pending === 1 ? "" : "s"} waiting to sync`}
+        </Text>
+      </ScrollView>
     </ScreenContainer>
   );
 }

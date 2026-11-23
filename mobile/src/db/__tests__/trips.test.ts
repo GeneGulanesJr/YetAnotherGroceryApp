@@ -9,6 +9,7 @@ import {
   listTrips,
   removePurchase,
   setPurchaseQuantity,
+  setTripBudget,
   startTrip,
   tripTotalMinor,
 } from "../repositories/trips";
@@ -132,6 +133,15 @@ describe("shopping trips", () => {
     const trip = startTrip(db, { currency: "PHP" });
     expect(cancelTrip(db, trip.id)?.status).toBe("cancelled");
     expect(getActiveTrip(db)).toBeUndefined();
+  });
+
+  it("starts with a budget, edits it while active, and lists it", () => {
+    const trip = startTrip(db, { currency: "PHP", budgetMinor: 200000 });
+    expect(trip.budgetMinor).toBe(200000);
+    expect(setTripBudget(db, trip.id, 150000)?.budgetMinor).toBe(150000);
+    expect(listTrips(db)[0].budgetMinor).toBe(150000);
+    completeTrip(db, trip.id);
+    expect(setTripBudget(db, trip.id, null)).toBeUndefined();
   });
 
   it("writes outbox mutations for every trip operation", () => {

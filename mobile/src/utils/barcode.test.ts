@@ -5,6 +5,7 @@ import {
   isValidEan13,
   isValidUpcA,
   normalizeBarcode,
+  rankScannedCodes,
 } from "./barcode";
 
 describe("barcode utils", () => {
@@ -69,5 +70,28 @@ describe("barcode utils", () => {
     expect(keys).toEqual(
       expect.arrayContaining([expanded, "01234569", "1234569"]),
     );
+  });
+});
+
+describe("ranking codes found in one photo", () => {
+  it("puts a valid EAN before QR and drops duplicates and junk", () => {
+    const ranked = rankScannedCodes([
+      { type: "qr", data: "https://store.example/p/1" },
+      { type: "ean13", data: "5901234123457" },
+      { type: "ean13", data: "5901234123457" },
+      { type: "code128", data: "SHELF-A12" },
+    ]);
+    expect(ranked).toEqual([
+      { data: "5901234123457", format: "ean-13" },
+      { data: "https://store.example/p/1", format: "qr" },
+    ]);
+  });
+
+  it("ranks a bad-check-digit EAN after a valid one", () => {
+    const ranked = rankScannedCodes([
+      { type: "ean13", data: "5901234123458" },
+      { type: "upc_a", data: "036000291452" },
+    ]);
+    expect(ranked.map((c) => c.data)).toEqual(["036000291452", "5901234123458"]);
   });
 });
