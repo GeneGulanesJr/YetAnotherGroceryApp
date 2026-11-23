@@ -5,3 +5,6 @@
 # Local agent tooling (skills) — not part of the product
 .zcode/
 skills-lock.json
+
+# Wrangler local state
+.wrangler/

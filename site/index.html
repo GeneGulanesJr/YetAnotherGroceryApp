@@ -9,7 +9,7 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta property="og:title" content="yaga: a grocery budget you can see">
-<meta property="og:description" content="₱700, six things on the list. Scroll down the aisle.">
+<meta property="og:description" content="₱800, six things on the list. Scroll down the aisle.">
 <meta property="og:image" content="apple-touch-icon.png">
 <style>
 @font-face { font-family: "Bricolage Grotesque"; src: url(fonts/BricolageGrotesque_400Regular.ttf) format("truetype"); font-weight: 400; font-display: swap; }
@@ -54,6 +54,8 @@ p { margin: 0; }
 .hero-copy { padding: 22px 5vw 0; max-width: 720px; }
 .hero-copy h1 { font-weight: 800; font-size: clamp(1.5rem, 3.2vw, 2.25rem); line-height: 1.12; margin: 0 0 12px; max-width: 22ch; }
 .hero-copy p { font-size: 1.125rem; max-width: 44ch; }
+.get { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin-top: 26px; }
+.get p { font-size: 0.9375rem; max-width: 34ch; }
 
 /* the aisle: one shelf per item, stickers placed by eye */
 .aisle { padding: 40px 0 24px; }
@@ -100,26 +102,54 @@ p { margin: 0; }
   clip-path: polygon(0 0, 100% 0, 100% 78%, 95% 100%, 90% 78%, 85% 100%, 80% 78%, 75% 100%, 70% 78%, 65% 100%, 60% 78%, 55% 100%, 50% 78%, 45% 100%, 40% 78%, 35% 100%, 30% 78%, 25% 100%, 20% 78%, 15% 100%, 10% 78%, 5% 100%, 0 78%);
 }
 
+/* no scrollbar: the stacked chevrons on the right say "keep walking"; wheel, touch and keys still scroll */
+html { scrollbar-width: none; }
+html::-webkit-scrollbar { display: none; }
+.more {
+  position: fixed; right: 14px; bottom: calc(var(--dock) + 30px); z-index: 6;
+  display: grid; justify-items: center; padding: 8px 6px; border: 0; background: none; cursor: pointer;
+  transition: opacity .2s ease;
+}
+.more[hidden] { display: none; }
+.more svg { display: block; width: 48px; height: 26px; margin-top: -4px; overflow: visible; }
+.more path { fill: none; stroke: var(--ink); stroke-width: 7; stroke-linecap: round; stroke-linejoin: round; }
+.more path.halo { stroke: var(--cream); stroke-width: 13; }
+.more svg:nth-child(1) { animation: walk 1.2s ease-in-out infinite; }
+.more svg:nth-child(2) { animation: walk 1.2s ease-in-out .15s infinite; }
+.more svg:nth-child(3) { animation: walk 1.2s ease-in-out .3s infinite; }
+@keyframes walk { 0%, 100% { opacity: .35; } 40% { opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .more svg { animation: none !important; }
+}
+
 @media (max-width: 640px) {
   :root { --dock: 92px; }
+  .more { right: 8px; }
   .dock { flex-wrap: wrap; gap: 6px 12px; }
   .cash { margin-left: 0; width: 100%; }
   .iou { margin-left: 0; }
   /* the budget must stay readable: the logo sticks just under the number instead of on it */
   .budget .logo { position: relative; display: block; top: auto; right: auto; width: 74vw; margin: -4vw 0 0 auto; }
   .shelf p { margin-left: 0; }
+  /* half the shelf offsets, so a sticker and its price tag stay on one line */
+  .shelf .cut { margin-left: calc(var(--x) / 2); }
 }
 </style>
 </head>
 <body>
 <header class="hero">
   <div class="budget" aria-hidden="true">
-    <span class="budget-num">₱700</span>
+    <span class="budget-num">₱800</span>
     <img class="logo" src="logo.svg" width="560" height="320" alt="">
   </div>
   <div class="hero-copy">
     <h1>yaga is a grocery budget app. This is your budget for today's run.</h1>
     <p>Six things on the list. Scroll down the aisle: each one you pass goes in the cart, and the wallet at the bottom of the screen pays for it, the way the app shows a run.</p>
+    <div class="get">
+      <a class="button" href="/download/yaga.apk" download>Download for Android</a>
+      <p>APK, version 0.1.0, 102 MB. A preview build: Android asks once to allow installs from your browser.</p>
+    </div>
   </div>
 </header>
 
@@ -131,20 +161,26 @@ p { margin: 0; }
     <p id="co-line">This is the cart, each sticker as big as what it costs. Tap one to put it back on the shelf.</p>
     <div class="pile" id="pile"></div>
     <div class="out">
-      <a class="button" href="https://github.com/GeneGulanesJr/YetAnotherGroceryApp">Follow the build on GitHub</a>
-      <p class="small">The Android app is in development. No sign-up and no ads; your lists and prices stay on your phone. yaga is short for YetAnotherGroceryApp. Set in Bricolage Grotesque (SIL Open Font License).</p>
+      <a class="button" href="/download/yaga.apk" download>Download for Android</a>
+      <p class="small">APK, version 0.1.0, 102 MB, a preview build. No sign-up and no ads; your lists and prices stay on your phone. Source and progress on <a href="https://github.com/GeneGulanesJr/YetAnotherGroceryApp">GitHub</a>. yaga is short for YetAnotherGroceryApp. Set in Bricolage Grotesque (SIL Open Font License).</p>
     </div>
   </section>
 </main>
 
+<button class="more" id="more" type="button" aria-label="Next on the list">
+  <svg viewBox="0 0 48 26" aria-hidden="true"><path class="halo" d="M6 6 L24 20 L42 6"/><path d="M6 6 L24 20 L42 6"/></svg>
+  <svg viewBox="0 0 48 26" aria-hidden="true"><path class="halo" d="M6 6 L24 20 L42 6"/><path d="M6 6 L24 20 L42 6"/></svg>
+  <svg viewBox="0 0 48 26" aria-hidden="true"><path class="halo" d="M6 6 L24 20 L42 6"/><path d="M6 6 L24 20 L42 6"/></svg>
+</button>
+
 <div class="dock" role="status" aria-live="polite" aria-label="Wallet">
-  <div><div class="dock-num" id="dnum">₱700.00</div><div class="dock-st under" id="dst">✓ natira</div></div>
+  <div><div class="dock-num" id="dnum">₱800.00</div><div class="dock-st under" id="dst">✓ natira</div></div>
   <div id="dcash" class="cash"></div>
 </div>
 
 <script>
 // The page is the run: shelves passed above mid-screen are in the cart, minus what checkout put back.
-const BUDGET = 70000; // centavos
+const BUDGET = 80000; // centavos: the first five items leave ₱0.50, the sardines tip it over
 const ITEMS = [
   { id: "bigas", name: "Bigas", price: 28500, x: "2%", tx: "3%", r: "-2deg", line: "Point the camera at the 5 kg sack and its shelf tag. One photo reads both the barcode and the price." },
   { id: "itlog", name: "Itlog", price: 23000, x: "34%", tx: "36%", r: "1.5deg", line: "You check the price before it counts. If the tag is blurry, the app asks for a retake instead of guessing." },
@@ -215,8 +251,16 @@ function onScroll() {
     const mid = innerHeight * 0.55;
     const now = new Set(ITEMS.filter((i) => $("s-" + i.id).getBoundingClientRect().top < mid).map((i) => i.id));
     if ([...now].join() !== [...passed].join()) { passed = now; render(); }
+    // the chevrons go once the page has nowhere further to go
+    $("more").hidden = innerHeight + scrollY >= document.documentElement.scrollHeight - 40;
   });
 }
+// tap the chevrons: walk to the next shelf not yet passed, then to checkout
+$("more").addEventListener("click", () => {
+  const next = [...document.querySelectorAll(".shelf, .checkout")].find((el) => el.getBoundingClientRect().top > innerHeight * 0.56);
+  const smooth = !matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (next) scrollTo({ top: scrollY + next.getBoundingClientRect().top - innerHeight * 0.3, behavior: smooth ? "smooth" : "auto" });
+});
 addEventListener("scroll", onScroll, { passive: true });
 addEventListener("resize", onScroll);
 render(); onScroll();

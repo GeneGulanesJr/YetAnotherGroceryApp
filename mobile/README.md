@@ -71,6 +71,23 @@ the run goes over.
 | `npm run typecheck`     | Run `tsc --noEmit`                           |
 | `npm test`              | Run Jest unit tests                          |
 
+## Publishing the APK
+
+The landing page's download serves `yaga.apk` from the `yaga-downloads` R2 bucket,
+so a new build needs no site deploy unless the version or size text changes:
+
+```sh
+cd android && ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a,armeabi-v7a && cd ..
+npx wrangler r2 object put yaga-downloads/yaga.apk --remote \
+  --file android/app/build/outputs/apk/release/app-release.apk \
+  --content-type application/vnd.android.package-archive \
+  --content-disposition 'attachment; filename="yaga-<version>.apk"'
+```
+
+Install and open the build on a device first. Without
+`EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` the app runs fully offline and hides the
+Account option. Release builds are still signed with the default debug key.
+
 ## What is implemented
 
 - **Expo SDK 57** (React Native 0.86, React 19, New Architecture) with

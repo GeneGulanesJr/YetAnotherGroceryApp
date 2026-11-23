@@ -1,12 +1,19 @@
-// Landing page for yaga, served as static assets by the `yetanothergroceryapp`
-// Worker. Cloudflare Workers Builds runs `npx wrangler versions upload` from
-// the repository root, so this file must live here. The web dashboard is a
-// separate Pages project (see web-desktop/wrangler.jsonc).
+// Landing page for yaga, served by the `yetanothergroceryapp` Worker.
+// Cloudflare Workers Builds runs `npx wrangler deploy` on main (and
+// `versions upload` on other branches) from the repository root, so this
+// file must live here. site/ is static; worker/index.js only adds
+// /download/yaga.apk from R2. The web dashboard is a separate Pages project
+// (see web-desktop/wrangler.jsonc).
 {
   "$schema": "https://unpkg.com/wrangler/config-schema.json",
   "name": "yetanothergroceryapp",
+  "main": "worker/index.js",
   "compatibility_date": "2026-11-19",
   "assets": {
-    "directory": "./site"
-  }
+    "directory": "./site",
+    "binding": "ASSETS"
+  },
+  "r2_buckets": [
+    { "binding": "DOWNLOADS", "bucket_name": "yaga-downloads" }
+  ]
 }
