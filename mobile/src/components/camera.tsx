@@ -4,14 +4,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { colors } from "../theme/tokens";
+import { palettes } from "../theme/tokens";
 import { PrimaryButton, Text, type IconName } from "./ui";
 
 /**
- * Shared camera chrome. Camera screens always sit on Deep Dark, whatever the
- * system theme, so these use the dark tokens directly.
+ * Shared camera chrome. Camera screens always sit on Night market, whatever the
+ * theme, so these use the Night tokens directly.
  */
-const dark = colors.dark;
+const dark = palettes.night;
 
 export function CameraPermission({
   reason,
@@ -23,7 +23,7 @@ export function CameraPermission({
   onCancel: () => void;
 }) {
   return (
-    <View className="flex-1 items-center justify-center gap-4 bg-paper-dark px-8">
+    <View className="flex-1 items-center justify-center gap-4 bg-cam-paper px-8">
       <StatusBar style="light" />
       <Ionicons name="camera-outline" size={36} color={dark.ink3} />
       <Text variant="title" tone="camera" className="text-center">
@@ -75,9 +75,9 @@ export function Shutter({ onPress, label }: { onPress: () => void; label: string
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}
-      className="h-[72px] w-[72px] items-center justify-center rounded-full border-4 border-ink-dark"
+      className="h-[72px] w-[72px] items-center justify-center rounded-full border-4 border-cam-ink"
     >
-      <View className="h-14 w-14 rounded-full bg-ink-dark" />
+      <View className="h-14 w-14 rounded-full bg-cam-ink" />
     </Pressable>
   );
 }
@@ -88,7 +88,7 @@ export function CameraBar({ children }: { children: ReactNode }) {
   return (
     <View
       style={{ paddingBottom: insets.bottom + 16 }}
-      className="absolute inset-x-0 bottom-0 flex-row items-center justify-between bg-paper-dark/80 px-6 pt-4"
+      className="absolute inset-x-0 bottom-0 flex-row items-center justify-between bg-cam-paper/80 px-6 pt-4"
     >
       {children}
     </View>
@@ -111,8 +111,8 @@ export function CameraGuide({
       className="absolute inset-x-0 items-center"
     >
       <StatusBar style="light" />
-      <View className={`rounded-lg border-2 border-ink-dark/80 ${frameClassName}`} />
-      <View className="mt-4 rounded-lg bg-paper-dark/70 px-3 py-1.5">
+      <View className={`rounded-lg border-2 border-cam-ink/80 ${frameClassName}`} />
+      <View className="mt-4 rounded-lg bg-cam-paper/70 px-3 py-1.5">
         <Text tone="camera" className="text-center">
           {text}
         </Text>
@@ -123,7 +123,7 @@ export function CameraGuide({
 
 export function Processing({ title }: { title: string }) {
   return (
-    <View className="flex-1 items-center justify-center gap-2 bg-paper-dark px-8">
+    <View className="flex-1 items-center justify-center gap-2 bg-cam-paper px-8">
       <StatusBar style="light" />
       <Text variant="title" tone="camera">
         {title}

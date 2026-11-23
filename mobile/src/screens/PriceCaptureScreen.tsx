@@ -94,7 +94,7 @@ export function PriceCaptureScreen({ navigation, route }: PriceCaptureProps) {
 
   return (
     <ScrollView
-      className="flex-1 bg-paper dark:bg-paper-dark"
+      className="flex-1 bg-paper"
       contentContainerClassName="px-5 py-6"
       keyboardShouldPersistTaps="handled"
     >
@@ -182,8 +182,8 @@ function BudgetAfter({
   return (
     <View className="mb-5 flex-row items-baseline justify-between">
       <Text tone="secondary">{status.over ? "Over budget after this" : "Budget left after this"}</Text>
-      <Text variant="title" tone={status.over ? "caution" : "brand"}>
-        {left}
+      <Text variant="title" tone={status.over ? "caution" : "under"}>
+        {status.over ? "▲" : "✓"} {left}
       </Text>
     </View>
   );

@@ -1,3 +1,5 @@
+import { createImageRecord } from "../repositories/images";
+import { recordPrice } from "../repositories/prices";
 import { createProduct } from "../repositories/products";
 import { createStore } from "../repositories/stores";
 import {
@@ -155,5 +157,29 @@ describe("shopping trips", () => {
     // trip insert + product insert + purchase insert + purchase insert? no:
     // trip + product + purchase + trip update = 4
     expect(delta).toBe(4);
+  });
+
+  describe("line photos", () => {
+    it("uses the photo snapped during the trip, then the product photo, then none", () => {
+      const before = new Date(Date.now() - 60_000);
+      const productPhoto = createImageRecord(db, { localUri: "file:///product.jpg" });
+      const oldSnap = createImageRecord(db, { localUri: "file:///old.jpg", thumbnailUri: "file:///old-t.jpg" });
+      const snap = createImageRecord(db, { localUri: "file:///snap.jpg", thumbnailUri: "file:///snap-t.jpg" });
+
+      const milk = createProduct(db, { name: "Milk", photoImageId: productPhoto.id });
+      const rice = createProduct(db, { name: "Rice", photoImageId: productPhoto.id });
+      const salt = createProduct(db, { name: "Salt" });
+      // A price photo from an earlier run must not leak into this one.
+      recordPrice(db, { productId: rice.id, currency: "PHP", regularPriceMinor: 100, sourceImageId: oldSnap.id, capturedAt: before });
+
+      const trip = startTrip(db, { currency: "PHP" });
+      recordPrice(db, { productId: milk.id, currency: "PHP", regularPriceMinor: 8950, sourceImageId: snap.id });
+      for (const product of [milk, rice, salt]) {
+        addProductToTrip(db, { tripId: trip.id, productId: product.id, currency: "PHP", shelfPriceMinor: 100 });
+      }
+
+      const photos = Object.fromEntries(getTripPurchases(db, trip.id).map((line) => [line.productName, line.photoUri]));
+      expect(photos).toEqual({ Milk: "file:///snap-t.jpg", Rice: "file:///product.jpg", Salt: null });
+    });
   });
 });

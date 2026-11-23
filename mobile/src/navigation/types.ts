@@ -7,7 +7,11 @@ export interface CapturedPrice {
 }
 
 export type RootStackParamList = {
-  MainTabs: undefined;
+  /** Home: the Shopping page (active run, or lists, library and past runs). */
+  Home: undefined;
+  Lists: { listId?: string } | undefined;
+  Library: { productId?: string } | undefined;
+  Settings: undefined;
   Auth: undefined;
   Scanner: undefined;
   ProductResolve: { barcode: string; format?: string };

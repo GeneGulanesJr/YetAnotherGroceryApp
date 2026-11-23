@@ -35,7 +35,7 @@ export function ScannerScreen({ navigation }: ScannerProps) {
   useHardwareBack(manualEntry, () => setManualEntry(false));
 
   if (permission === null) {
-    return <View className="flex-1 bg-paper-dark" />;
+    return <View className="flex-1 bg-cam-paper" />;
   }
 
   if (!permission.granted) {
@@ -69,7 +69,7 @@ export function ScannerScreen({ navigation }: ScannerProps) {
   };
 
   return (
-    <View className="flex-1 bg-paper-dark">
+    <View className="flex-1 bg-cam-paper">
       <CameraView
         style={{ flex: 1 }}
         onBarcodeScanned={handleScan}
@@ -83,7 +83,7 @@ export function ScannerScreen({ navigation }: ScannerProps) {
           behavior="padding"
           style={{ position: "absolute", left: 16, right: 16, bottom: insets.bottom + 120 }}
         >
-          <View className="gap-3 rounded-lg bg-card p-4 dark:bg-card-dark">
+          <View className="gap-3 rounded-2xl border-2 border-outline bg-card p-4">
             <Text variant="label" tone="secondary">
               Type the digits printed under the barcode
             </Text>

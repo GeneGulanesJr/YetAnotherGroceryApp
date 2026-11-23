@@ -7,8 +7,8 @@ import { ocrAvailable, type OcrResult } from "../capture/ocr";
 import type { PriceAssessment, PriceCandidate } from "../capture/priceParse";
 import type { ImageRecord } from "../db/schema";
 import type { CapturedPrice } from "../navigation/types";
-// OCR boxes sit on the photo, which is always on Deep Dark.
-import { colors, useTokens } from "../theme/tokens";
+// OCR boxes sit on the photo, which is always on the Night camera ground.
+import { palettes, useTokens } from "../theme/tokens";
 import { formatMoney } from "../utils/money";
 import { AppTextInput, Notice, PrimaryButton, Text } from "./ui";
 
@@ -56,13 +56,13 @@ export function PriceReview({
 
   return (
     <ScrollView
-      className="flex-1 bg-paper dark:bg-paper-dark"
+      className="flex-1 bg-paper"
       contentContainerClassName="pb-10"
       keyboardShouldPersistTaps="handled"
     >
       {/* The photo band is always dark. */}
       <StatusBar style="light" />
-      <View className="h-72 bg-paper-dark">
+      <View className="h-72 bg-cam-paper">
         {ocr !== null ? (
           <OCRTextOverlay
             result={ocr.raw}
@@ -70,8 +70,8 @@ export function PriceReview({
             imageHeight={image.height ?? 1}
             resizeMode="contain"
             highlightLevel="line"
-            boxColor={colors.dark.brandText}
-            selectedBoxColor={colors.dark.ink}
+            boxColor={palettes.night.brandText}
+            selectedBoxColor={palettes.night.ink}
             style={{ flex: 1 }}
           >
             <Image source={{ uri: image.localUri ?? undefined }} style={{ flex: 1, resizeMode: "contain" }} />
@@ -106,7 +106,7 @@ export function PriceReview({
                 accessibilityRole="button"
                 accessibilityLabel={`Use ${money(candidate.minor)}`}
                 android_ripple={{ color: t.line }}
-                className="min-h-14 flex-row items-center justify-between gap-3 overflow-hidden rounded-lg bg-card px-4 py-3 dark:bg-card-dark"
+                className="min-h-14 flex-row items-center justify-between gap-3 overflow-hidden rounded-2xl border-2 border-outline bg-card px-4 py-3"
               >
                 <Text variant="title" tone={index === 0 && clear ? "brand" : "primary"}>
                   {money(candidate.minor)}

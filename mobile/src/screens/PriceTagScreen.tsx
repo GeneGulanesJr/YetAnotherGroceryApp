@@ -47,7 +47,7 @@ export function PriceTagScreen({ navigation, route }: PriceTagProps) {
   );
 
   if (permission === null) {
-    return <View className="flex-1 bg-paper-dark" />;
+    return <View className="flex-1 bg-cam-paper" />;
   }
 
   if (!permission.granted) {
@@ -81,7 +81,7 @@ export function PriceTagScreen({ navigation, route }: PriceTagProps) {
 
   if (phase.step === "camera") {
     return (
-      <View className="flex-1 bg-paper-dark">
+      <View className="flex-1 bg-cam-paper">
         <CameraView ref={cameraRef} style={{ flex: 1 }} zoom={0} enableTorch={torchOn} />
         <CameraGuide text="Frame the price tag, then capture" frameClassName="h-28 w-72" />
         <CameraBar>
@@ -104,7 +104,7 @@ export function PriceTagScreen({ navigation, route }: PriceTagProps) {
 
   if (phase.step === "error") {
     return (
-      <View className="flex-1 items-center justify-center gap-4 bg-paper-dark px-8">
+      <View className="flex-1 items-center justify-center gap-4 bg-cam-paper px-8">
         <Text tone="camera" className="text-center">
           {phase.message}
         </Text>

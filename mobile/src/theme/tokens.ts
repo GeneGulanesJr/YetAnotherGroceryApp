@@ -1,38 +1,69 @@
-import { useColorScheme } from "react-native";
+import { useColorScheme, type ColorSchemeName } from "react-native";
 
-import kami from "./kami.json";
+import { useAppStore } from "../store/useAppStore";
+import themes from "./themes.json";
 
 /**
- * Design tokens derived from Kami (~/.claude/skills/kami): parchment paper,
- * one ink-blue accent kept to small areas, warm grays only, one serif in
- * weights 400/500, no bold, no italic, flat surfaces.
+ * Sticker-wallet design tokens: six palettes (Palengke, Resibo and Jade night
+ * match the jade logo; Bubblegum, Cream and Night market are the originals),
+ * chunky Bricolage Grotesque, ink outlines and a hard offset shadow (none in
+ * the dark themes). Every body-text pair is at least 4.5:1 (theme.test.ts).
  *
- * Values live in kami.json, which tailwind.config.js also reads, so classes
- * (`bg-paper dark:bg-paper-dark`) and JS colors (icons, ripples, placeholders)
- * cannot drift apart.
+ * Values live in themes.json, which tailwind.config.js also reads: classes use
+ * CSS variables that ThemeRoot sets for the active theme, so `bg-paper` follows
+ * the theme and JS colors (icons, ripples, placeholders) come from useTokens().
  *
- * Light rungs are Kami's own: Parchment, Ivory, Warm Sand, Near Black, Olive,
- * Stone, Brand, Default tag, and the breaking-change caution pair.
- *
- * Deviation: Kami has no dark UI theme, but tech.mobile.md requires one. Dark
- * uses Kami's Deep Dark (#141413), Dark Surface (#30302e), Dark Warm (#3d3d3a)
- * and Ink Light (#2D5A8A, fills only), plus these registered values:
- * - ink2 #d1cfc5 / ink3 #a3a199: warm grays light enough for 4.5:1 body text on Deep Dark.
- * - brandText #9DB7D5: Ink Light is only 2.6:1 on Deep Dark, so accent text lifts it.
- * - tint #1f2d40: the Default tag (#E4ECF5) darkened to sit on Deep Dark.
- * - cautionBg #3b2a20 / cautionFg #e3b394: the caution pair inverted for dark.
- *
- * Status colors: caution (overcharge, error, mismatch) is the only second hue;
- * a good deal is shown with brand emphasis, never green.
+ * Status: cautionFg is the over-budget color, under the within-budget one.
+ * Never use either alone: pair it with ▲/✓ and a word.
  */
-export const colors = kami;
+export const palettes = themes.palettes;
+export const moneyColors = themes.money;
 
-export type ColorScheme = keyof typeof colors;
-export type ThemeTokens = (typeof colors)["light"];
+export type ThemeName = keyof typeof palettes;
+export type ThemePreference = "auto" | ThemeName;
+export type ThemeTokens = (typeof palettes)["bubblegum"];
 
-/** The one bundled serif (Source Serif 4, OFL-1.1), linked by the expo-font plugin. */
-export const FONT_FAMILY = "Source Serif 4";
+export const THEME_PREFERENCES: readonly ThemePreference[] = [
+  "auto",
+  "palengke",
+  "resibo",
+  "jadenight",
+  "bubblegum",
+  "cream",
+  "night",
+];
+
+/** Dark themes: light status bar, dark navigation theme, no offset shadow. */
+export function isDarkTheme(name: ThemeName): boolean {
+  return name === "night" || name === "jadenight";
+}
+
+/** The one bundled face (Bricolage Grotesque, OFL-1.1, weights 400/600/800), linked by the expo-font plugin. */
+export const FONT_FAMILY = "Bricolage Grotesque";
+
+/** sync_meta key holding the preference (local only, never synced). */
+export const THEME_META_KEY = "theme";
+
+/** A stored value back to a preference; anything unknown means Automatic. */
+export function parseThemePreference(value: string | null): ThemePreference {
+  return THEME_PREFERENCES.find((pref) => pref === value) ?? "auto";
+}
+
+/** Automatic is Palengke in light mode (the in-store default) and Jade night in dark mode. */
+export function resolveTheme(pref: ThemePreference, system: ColorSchemeName | null | undefined): ThemeName {
+  if (pref !== "auto") {
+    return pref;
+  }
+  return system === "dark" ? "jadenight" : "palengke";
+}
+
+export function useTheme(): { name: ThemeName; t: ThemeTokens; shadow: string | undefined } {
+  const pref = useAppStore((state) => state.theme);
+  const name = resolveTheme(pref, useColorScheme());
+  const t = palettes[name];
+  return { name, t, shadow: isDarkTheme(name) ? undefined : `3px 3px 0px ${t.outline}` };
+}
 
 export function useTokens(): ThemeTokens {
-  return colors[useColorScheme() === "dark" ? "dark" : "light"];
+  return useTheme().t;
 }

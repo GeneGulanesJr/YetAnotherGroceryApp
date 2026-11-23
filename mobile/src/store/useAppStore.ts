@@ -1,10 +1,13 @@
 import { create } from "zustand";
 
+import type { ThemePreference } from "../theme/tokens";
+
 export type SyncStatus = "idle" | "syncing" | "error";
 
 export interface AppState {
-  colorScheme: "light" | "dark";
-  setColorScheme: (scheme: "light" | "dark") => void;
+  /** Loaded from sync_meta by ThemeRoot; Settings changes it. */
+  theme: ThemePreference;
+  setTheme: (theme: ThemePreference) => void;
 
   syncStatus: SyncStatus;
   lastSyncedAt: number | null;
@@ -15,8 +18,8 @@ export interface AppState {
 }
 
 export const useAppStore = create<AppState>((set) => ({
-  colorScheme: "light",
-  setColorScheme: (colorScheme) => set({ colorScheme }),
+  theme: "auto",
+  setTheme: (theme) => set({ theme }),
 
   syncStatus: "idle",
   lastSyncedAt: null,

@@ -182,7 +182,23 @@ export interface TripPurchaseLine
   productBrand: string | null;
   unit: string | null;
   packageSize: string | null;
+  /** The photo snapped for this product during the trip, else the product photo, else null. */
+  photoUri: string | null;
 }
+
+/**
+ * Purchases carry no image: a Snap item saves the photo on the price row
+ * (prices.source_image_id) in the same save, so the line's photo is the
+ * latest price photo for that product captured since the trip started.
+ */
+const photoUri = sql<string | null>`coalesce(
+  (select coalesce(i.thumbnail_uri, i.local_uri) from prices p
+     join images i on i.id = p.source_image_id and i.deleted_at is null
+    where p.product_id = ${purchases.productId} and p.deleted_at is null
+      and p.captured_at >= ${trips.startedAt}
+    order by p.captured_at desc limit 1),
+  (select coalesce(i.thumbnail_uri, i.local_uri) from images i
+    where i.id = ${products.photoImageId} and i.deleted_at is null))`;
 
 export function getTripPurchases(db: Db, tripId: string): TripPurchaseLine[] {
   return db
@@ -192,9 +208,11 @@ export function getTripPurchases(db: Db, tripId: string): TripPurchaseLine[] {
       productBrand: products.brand,
       unit: products.unit,
       packageSize: products.packageSize,
+      photoUri,
     })
     .from(purchases)
     .innerJoin(products, eq(products.id, purchases.productId))
+    .innerJoin(trips, eq(trips.id, purchases.tripId))
     .where(and(eq(purchases.tripId, tripId), isNull(purchases.deletedAt)))
     .orderBy(purchases.createdAt)
     .all()
@@ -210,6 +228,7 @@ export function getTripPurchases(db: Db, tripId: string): TripPurchaseLine[] {
       productBrand: row.productBrand ?? null,
       unit: row.unit ?? null,
       packageSize: row.packageSize ?? null,
+      photoUri: row.photoUri ?? null,
     }));
 }
 

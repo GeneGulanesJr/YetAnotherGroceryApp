@@ -92,7 +92,7 @@ export function ManualProductScreen({ navigation, route }: ManualProductProps) {
 
   return (
     <ScrollView
-      className="flex-1 bg-paper dark:bg-paper-dark"
+      className="flex-1 bg-paper"
       contentContainerClassName="px-5 py-6"
       keyboardShouldPersistTaps="handled"
     >
@@ -152,7 +152,7 @@ export function ManualProductScreen({ navigation, route }: ManualProductProps) {
           onPress={() => setCategoryPickerOpen(true)}
           accessibilityRole="button"
           android_ripple={{ color: t.line }}
-          className="min-h-12 flex-row items-center justify-between overflow-hidden rounded-lg border border-line bg-card px-3 dark:border-line-dark dark:bg-card-dark"
+          className="min-h-12 flex-row items-center justify-between overflow-hidden rounded-xl border-2 border-outline bg-card px-3"
         >
           <Text tone={selectedCategory === null ? "meta" : "primary"}>
             {selectedCategory?.name ?? "Pick a category"}
@@ -193,7 +193,7 @@ export function ManualProductScreen({ navigation, route }: ManualProductProps) {
 
       <Field label="Product photo" hint="Optional. Compressed and stored on this phone.">
         <View className="flex-row items-center gap-3">
-          {photoUri !== null ? <Image source={{ uri: photoUri }} className="h-20 w-20 rounded-lg" /> : null}
+          {photoUri !== null ? <Image source={{ uri: photoUri }} className="h-20 w-20 rounded-2xl border-2 border-outline" /> : null}
           <PrimaryButton
             label={photoUri === null ? "Choose photo" : "Replace photo"}
             icon="image-outline"
@@ -241,7 +241,7 @@ export function ManualProductScreen({ navigation, route }: ManualProductProps) {
                 }}
                 accessibilityRole="button"
                 android_ripple={{ color: t.line }}
-                className="min-h-12 flex-row items-center justify-between border-b border-line py-3 dark:border-line-dark"
+                className="min-h-12 flex-row items-center justify-between border-b border-line py-3"
               >
                 <Text>{item.name}</Text>
                 {item.id === categoryId ? <Ionicons name="checkmark" size={20} color={t.brandText} /> : null}

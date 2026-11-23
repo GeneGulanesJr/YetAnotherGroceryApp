@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { Alert, FlatList, Pressable, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { ScreenContainer } from "../components/ScreenContainer";
@@ -32,10 +32,17 @@ import { formatMoney } from "../utils/money";
 
 type ListsNavigation = NativeStackNavigationProp<RootStackParamList>;
 
-export function ListsScreen({ navigation }: { navigation: ListsNavigation }) {
+export function ListsScreen({
+  navigation,
+  route,
+}: {
+  navigation: ListsNavigation;
+  route: RouteProp<RootStackParamList, "Lists">;
+}) {
   const [lists, setLists] = useState<ListSummaryLine[]>(() => listLists(getDatabase()));
   const [createOpen, setCreateOpen] = useState(false);
-  const [openListId, setOpenListId] = useState<string | null>(null);
+  // Home opens a specific list straight away.
+  const [openListId, setOpenListId] = useState<string | null>(route.params?.listId ?? null);
 
   const refresh = useCallback(() => setLists(listLists(getDatabase())), []);
   useFocusEffect(refresh);
@@ -64,7 +71,7 @@ export function ListsScreen({ navigation }: { navigation: ListsNavigation }) {
               onPress={() => setOpenListId(item.id)}
               accessibilityRole="button"
               android_ripple={{ color: t.line }}
-              className={`min-h-16 flex-row items-center gap-3 py-3 ${index === lists.length - 1 ? "" : "border-b border-line dark:border-line-dark"}`}
+              className={`min-h-16 flex-row items-center gap-3 py-3 ${index === lists.length - 1 ? "" : "border-b border-line"}`}
             >
               <View className="flex-1">
                 <Text>{item.name}</Text>
@@ -104,7 +111,7 @@ export function ListsScreen({ navigation }: { navigation: ListsNavigation }) {
           onTripStarted={() => {
             setOpenListId(null);
             refresh();
-            navigation.navigate("Shopping" as never);
+            navigation.navigate("Home");
           }}
         />
       ) : null}
@@ -206,7 +213,7 @@ function ListDetailModal({
           renderItem={({ item }) => {
             const done = item.purchased === 1;
             return (
-              <View className="min-h-14 flex-row items-center border-b border-line dark:border-line-dark">
+              <View className="min-h-14 flex-row items-center border-b border-line">
                 <Pressable
                   onPress={() => {
                     setListItemPurchased(getDatabase(), item.id, !done);

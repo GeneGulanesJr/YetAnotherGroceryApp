@@ -78,7 +78,7 @@ export function ReceiptCaptureScreen({ navigation }: ReceiptProps) {
   useHardwareBack(phase.step === "edit", () => setPhase({ step: "camera" }));
 
   if (permission === null) {
-    return <View className="flex-1 bg-paper-dark" />;
+    return <View className="flex-1 bg-cam-paper" />;
   }
 
   if (!permission.granted && phase.step === "camera") {
@@ -191,7 +191,7 @@ export function ReceiptCaptureScreen({ navigation }: ReceiptProps) {
 
   if (phase.step === "camera") {
     return (
-      <View className="flex-1 bg-paper-dark">
+      <View className="flex-1 bg-cam-paper">
         <CameraView ref={cameraRef} style={{ flex: 1 }} />
         <CameraGuide text="Fill the frame with the receipt" frameClassName="h-96 w-72" />
         <CameraBar>
@@ -210,7 +210,7 @@ export function ReceiptCaptureScreen({ navigation }: ReceiptProps) {
   if (phase.step === "saved") {
     const over = phase.overchargeMinor !== null && phase.overchargeMinor > 0;
     return (
-      <View className="flex-1 justify-center bg-paper px-5 dark:bg-paper-dark">
+      <View className="flex-1 justify-center bg-paper px-5">
         <Text variant="display">Receipt saved</Text>
         <Text variant="title" tone="brand" className="mt-3">
           {formatMoney({ amountMinor: phase.totalMinor, currency })}
@@ -243,7 +243,7 @@ export function ReceiptCaptureScreen({ navigation }: ReceiptProps) {
 
   return (
     <ScrollView
-      className="flex-1 bg-paper dark:bg-paper-dark"
+      className="flex-1 bg-paper"
       contentContainerClassName="px-5 pb-12"
       contentContainerStyle={{ paddingTop: 24 }}
       keyboardShouldPersistTaps="handled"
@@ -265,9 +265,9 @@ export function ReceiptCaptureScreen({ navigation }: ReceiptProps) {
               accessibilityRole="button"
               accessibilityLabel={`Line type ${line.lineType}, tap to change`}
               hitSlop={8}
-              className="min-h-8 justify-center rounded-md bg-tint px-2.5 dark:bg-tint-dark"
+              className="min-h-8 justify-center rounded-md bg-tint px-2.5"
             >
-              <Text variant="meta" tone="brand" className="font-medium">
+              <Text variant="meta" tone="brand" className="font-semibold">
                 {line.lineType}
               </Text>
             </Pressable>

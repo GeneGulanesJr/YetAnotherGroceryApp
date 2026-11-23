@@ -1,6 +1,7 @@
 import type { ComponentProps, ReactNode } from "react";
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
   Modal,
   Pressable,
   Text as RNText,
@@ -8,44 +9,49 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { FONT_FAMILY, useTokens } from "../theme/tokens";
+import { FONT_FAMILY, useTheme, useTokens } from "../theme/tokens";
 
 /**
- * Kami-derived primitives. Screens import `Text` from here, not from
- * react-native, so every string gets the bundled serif and a token color.
+ * Sticker-wallet primitives. Screens import `Text` from here, not from
+ * react-native, so every string gets Bricolage Grotesque and a token color.
  * Pass `className` for layout only; color and size come from `tone`/`variant`.
+ * Surfaces are stickers: a 2px ink outline plus a hard offset shadow (useTheme().shadow,
+ * none in Night market).
  */
 
 export type IconName = ComponentProps<typeof Ionicons>["name"];
 
 const TONES = {
-  primary: "text-ink dark:text-ink-dark",
-  secondary: "text-ink-2 dark:text-ink-2-dark",
-  meta: "text-ink-3 dark:text-ink-3-dark",
-  brand: "text-brand-text dark:text-brand-text-dark",
-  caution: "text-caution-fg dark:text-caution-fg-dark",
+  primary: "text-ink",
+  secondary: "text-ink-2",
+  meta: "text-ink-3",
+  brand: "text-brand-text",
+  caution: "text-caution-fg",
+  under: "text-under",
   onBrand: "text-on-brand",
-  // Camera screens are always dark, whatever the system theme.
-  camera: "text-ink-dark",
-  cameraSecondary: "text-ink-2-dark",
-  cameraActive: "text-brand-text-dark",
+  // Camera screens are always Night market, whatever the theme.
+  camera: "text-cam-ink",
+  cameraSecondary: "text-cam-ink-2",
+  cameraActive: "text-cam-brand-text",
 } as const;
 
-// Four screen sizes (Kami: display, title, body, secondary) plus a label weight.
+// The face ships in 400/600/800 only; stay on those weights (500/700 resolve unpredictably).
 const VARIANTS = {
-  display: "text-[28px] leading-[34px] font-medium",
-  title: "text-xl leading-[26px] font-medium",
+  hero: "text-[52px] leading-[56px] font-extrabold tracking-tighter",
+  display: "text-[30px] leading-[36px] font-extrabold tracking-tight",
+  title: "text-xl leading-[26px] font-extrabold",
   body: "text-base leading-6",
-  label: "text-sm leading-5 font-medium tracking-wide",
+  label: "text-sm leading-5 font-semibold",
   meta: "text-[13px] leading-[18px]",
 } as const;
 
 export type Tone = keyof typeof TONES;
 
-// NativeWind drops a font-family class whose name has spaces, so the serif goes through style.
-const serif = { fontFamily: FONT_FAMILY };
+// NativeWind drops a font-family class whose name has spaces, so the face goes through style.
+// Tabular figures keep prices from jittering as they change.
+const face = { fontFamily: FONT_FAMILY, fontVariant: ["tabular-nums" as const] };
 
 export function Text({
   tone = "primary",
@@ -60,7 +66,7 @@ export function Text({
   return (
     <RNText
       className={`${VARIANTS[variant]} ${TONES[tone]} ${className}`}
-      style={[serif, style]}
+      style={[face, style]}
       {...props}
     />
   );
@@ -81,15 +87,9 @@ export function PrimaryButton({
   icon?: IconName;
   variant?: "primary" | "secondary" | "danger";
 }) {
-  const t = useTokens();
-  const palette =
-    variant === "primary"
-      ? "bg-brand dark:bg-brand-dark"
-      : variant === "danger"
-        ? "bg-caution-bg dark:bg-caution-bg-dark"
-        : "border border-line bg-sand dark:border-line-dark dark:bg-sand-dark";
-  const tone: Tone =
-    variant === "primary" ? "onBrand" : variant === "danger" ? "caution" : "primary";
+  const { t, shadow } = useTheme();
+  const palette = variant === "primary" ? "bg-brand" : "bg-card";
+  const tone: Tone = variant === "primary" ? "onBrand" : variant === "danger" ? "caution" : "primary";
   const fg = variant === "primary" ? t.onBrand : variant === "danger" ? t.cautionFg : t.ink;
   const inactive = disabled === true || loading === true;
   return (
@@ -98,15 +98,16 @@ export function PrimaryButton({
       disabled={inactive}
       accessibilityRole="button"
       accessibilityState={{ disabled: inactive, busy: loading === true }}
-      android_ripple={{ color: variant === "primary" ? t.brandText : t.line }}
-      className={`min-h-12 flex-row items-center justify-center gap-2 overflow-hidden rounded-lg px-4 py-3 ${palette} ${inactive ? "opacity-50" : ""}`}
+      android_ripple={{ color: t.line }}
+      style={{ boxShadow: inactive ? undefined : shadow }}
+      className={`min-h-12 flex-row items-center justify-center gap-2 overflow-hidden rounded-full border-2 border-outline px-5 py-3 ${palette} ${inactive ? "opacity-50" : ""}`}
     >
       {loading === true ? (
         <ActivityIndicator color={fg} />
       ) : icon !== undefined ? (
         <Ionicons name={icon} size={20} color={fg} />
       ) : null}
-      <Text tone={tone} className="font-medium">
+      <Text tone={tone} className="text-[17px] font-extrabold">
         {label}
       </Text>
     </Pressable>
@@ -143,8 +144,8 @@ export function AppTextInput({ style, ...props }: ComponentProps<typeof TextInpu
     <TextInput
       placeholderTextColor={t.ink3}
       selectionColor={t.brandText}
-      className="min-h-12 rounded-lg border border-line bg-card px-3 py-2.5 text-base text-ink dark:border-line-dark dark:bg-card-dark dark:text-ink-dark"
-      style={[serif, style]}
+      className="min-h-12 rounded-xl border-2 border-outline bg-card px-3 py-2.5 text-base text-ink"
+      style={[face, style]}
       {...props}
     />
   );
@@ -168,21 +169,26 @@ export function Chip({
       android_ripple={{ color: t.line }}
       // 36dp visual height + 6dp slop each side = 48dp touch target.
       hitSlop={6}
-      className={`mr-2 min-h-9 justify-center overflow-hidden rounded-full px-3.5 ${selected ? "bg-brand dark:bg-brand-dark" : "bg-sand dark:bg-sand-dark"}`}
+      className={`mr-2 min-h-9 justify-center overflow-hidden rounded-full border-2 border-outline px-3.5 ${selected ? "bg-brand" : "bg-card"}`}
     >
-      <Text variant="meta" tone={selected ? "onBrand" : "secondary"} className="font-medium">
+      <Text variant="meta" tone={selected ? "onBrand" : "primary"} className="font-semibold">
         {label}
       </Text>
     </Pressable>
   );
 }
 
-/** One quiet grouping cue: an ivory fill, no border or shadow (Kami cards). */
+/** A sticker: card fill, ink outline, hard shadow. */
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <View className={`rounded-lg bg-card p-4 dark:bg-card-dark ${className}`}>{children}</View>;
+  const { shadow } = useTheme();
+  return (
+    <View style={{ boxShadow: shadow }} className={`rounded-2xl border-2 border-outline bg-card p-4 ${className}`}>
+      {children}
+    </View>
+  );
 }
 
-/** Inline state message: caution for errors and mismatches, brand tint for good news. */
+/** Inline state message: caution for errors and mismatches, tint for good news. Icon + words, never color alone. */
 export function Notice({
   tone = "caution",
   icon,
@@ -197,7 +203,7 @@ export function Notice({
   return (
     <View
       accessibilityRole="alert"
-      className={`flex-row items-start gap-2 rounded-lg px-3 py-2.5 ${caution ? "bg-caution-bg dark:bg-caution-bg-dark" : "bg-tint dark:bg-tint-dark"}`}
+      className={`flex-row items-start gap-2 rounded-xl border-2 px-3 py-2.5 ${caution ? "border-caution-fg bg-caution-bg" : "border-outline bg-tint"}`}
     >
       <Ionicons
         name={icon ?? (caution ? "alert-circle-outline" : "information-circle-outline")}
@@ -205,7 +211,7 @@ export function Notice({
         color={caution ? t.cautionFg : t.brandText}
         style={{ marginTop: 2 }}
       />
-      <Text variant="meta" tone={caution ? "caution" : "brand"} className="flex-1">
+      <Text variant="meta" tone={caution ? "caution" : "brand"} className="flex-1 font-semibold">
         {children}
       </Text>
     </View>
@@ -255,11 +261,11 @@ export function ListRow({
       onPress={onPress}
       accessibilityRole="button"
       android_ripple={{ color: t.line }}
-      className={`min-h-14 flex-row items-center gap-3 py-3 ${last ? "" : "border-b border-line dark:border-line-dark"}`}
+      className={`min-h-14 flex-row items-center gap-3 py-3 ${last ? "" : "border-b-2 border-line"}`}
     >
       {icon !== undefined ? <Ionicons name={icon} size={22} color={t.ink2} /> : null}
       <View className="flex-1">
-        <Text>{title}</Text>
+        <Text className="font-semibold">{title}</Text>
         {detail !== undefined ? (
           <Text variant="meta" tone="meta">
             {detail}
@@ -299,6 +305,26 @@ export function FullScreenModal({
           {children}
         </SafeAreaView>
       </SafeAreaProvider>
+    </Modal>
+  );
+}
+
+/** Sheet from the bottom edge over a dimmed page; tap outside or hardware back closes it. */
+export function BottomSheet({ onClose, children }: { onClose: () => void; children: ReactNode }) {
+  const { shadow } = useTheme();
+  const insets = useSafeAreaInsets();
+  return (
+    <Modal transparent visible animationType="slide" onRequestClose={onClose} statusBarTranslucent navigationBarTranslucent>
+      {/* Lifts the sheet over the keyboard when it holds a text field. */}
+      <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+        <Pressable className="flex-1 bg-black/40" onPress={onClose} accessibilityLabel="Close" accessibilityRole="button" />
+        <View
+          style={{ paddingBottom: insets.bottom + 16, boxShadow: shadow }}
+          className="rounded-t-3xl border-2 border-b-0 border-outline bg-paper px-5 pt-5"
+        >
+          {children}
+        </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

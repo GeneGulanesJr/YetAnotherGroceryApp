@@ -55,7 +55,7 @@ export function ProductResolveScreen({ navigation, route }: ResolveProps) {
 
   if (match === null) {
     return (
-      <View className="flex-1 bg-paper px-5 pb-6 dark:bg-paper-dark">
+      <View className="flex-1 bg-paper px-5 pb-6">
         <EmptyState
           icon="barcode-outline"
           title="Not in your library yet"
@@ -102,7 +102,7 @@ export function ProductResolveScreen({ navigation, route }: ResolveProps) {
 
   return (
     <ScrollView
-      className="flex-1 bg-paper dark:bg-paper-dark"
+      className="flex-1 bg-paper"
       contentContainerClassName="flex-grow px-5 py-6"
     >
       <Text variant="meta" tone="meta">

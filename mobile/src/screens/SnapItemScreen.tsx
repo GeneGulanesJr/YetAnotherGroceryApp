@@ -70,7 +70,7 @@ export function SnapItemScreen({ navigation }: SnapItemProps) {
   );
 
   if (permission === null) {
-    return <View className="flex-1 bg-paper-dark" />;
+    return <View className="flex-1 bg-cam-paper" />;
   }
 
   if (!permission.granted) {
@@ -121,7 +121,7 @@ export function SnapItemScreen({ navigation }: SnapItemProps) {
   if (phase.step === "camera" || phase.step === "scanBarcode") {
     const addingBarcode = phase.step === "scanBarcode";
     return (
-      <View className="flex-1 bg-paper-dark">
+      <View className="flex-1 bg-cam-paper">
         <CameraView
           ref={cameraRef}
           style={{ flex: 1 }}
@@ -181,7 +181,7 @@ export function SnapItemScreen({ navigation }: SnapItemProps) {
 
   if (phase.step === "error") {
     return (
-      <View className="flex-1 items-center justify-center gap-4 bg-paper-dark px-8">
+      <View className="flex-1 items-center justify-center gap-4 bg-cam-paper px-8">
         <Text tone="camera" className="text-center">
           {phase.message}
         </Text>

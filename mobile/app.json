@@ -21,8 +21,9 @@
       ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundImage": "./assets/adaptive-icon-background.png",
         "monochromeImage": "./assets/adaptive-icon-monochrome.png",
-        "backgroundColor": "#f5f4ed"
+        "backgroundColor": "#1E8F86"
       }
     },
     "extra": {
@@ -39,15 +40,19 @@
           "android": {
             "fonts": [
               {
-                "fontFamily": "Source Serif 4",
+                "fontFamily": "Bricolage Grotesque",
                 "fontDefinitions": [
                   {
-                    "path": "./assets/fonts/SourceSerif4_400Regular.ttf",
+                    "path": "./assets/fonts/BricolageGrotesque_400Regular.ttf",
                     "weight": 400
                   },
                   {
-                    "path": "./assets/fonts/SourceSerif4_500Medium.ttf",
-                    "weight": 500
+                    "path": "./assets/fonts/BricolageGrotesque_600SemiBold.ttf",
+                    "weight": 600
+                  },
+                  {
+                    "path": "./assets/fonts/BricolageGrotesque_800ExtraBold.ttf",
+                    "weight": 800
                   }
                 ]
               }
@@ -55,8 +60,9 @@
           },
           "ios": {
             "fonts": [
-              "./assets/fonts/SourceSerif4_400Regular.ttf",
-              "./assets/fonts/SourceSerif4_500Medium.ttf"
+              "./assets/fonts/BricolageGrotesque_400Regular.ttf",
+              "./assets/fonts/BricolageGrotesque_600SemiBold.ttf",
+              "./assets/fonts/BricolageGrotesque_800ExtraBold.ttf"
             ]
           }
         }
@@ -83,15 +89,15 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 160,
           "resizeMode": "contain",
-          "backgroundColor": "#f5f4ed",
+          "backgroundColor": "#1E8F86",
           "dark": {
             "image": "./assets/splash-icon-dark.png",
-            "backgroundColor": "#141413"
+            "backgroundColor": "#0F2226"
           }
         }
       ]
     ],
     "icon": "./assets/icon.png",
-    "backgroundColor": "#f5f4ed"
+    "backgroundColor": "#CFEAE5"
   }
 }

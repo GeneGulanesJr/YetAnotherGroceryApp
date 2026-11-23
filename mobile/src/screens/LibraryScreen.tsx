@@ -1,10 +1,19 @@
 import { useCallback, useState } from "react";
 import { FlatList, Pressable, View } from "react-native";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { ScreenContainer } from "../components/ScreenContainer";
-import { AppTextInput, EmptyState, FullScreenModal, PrimaryButton, Text } from "../components/ui";
+import {
+  AppTextInput,
+  BottomSheet,
+  EmptyState,
+  Field,
+  FullScreenModal,
+  ListRow,
+  PrimaryButton,
+  Text,
+} from "../components/ui";
 import { getDatabase } from "../db/database";
 import {
   archiveProduct,
@@ -18,16 +27,27 @@ import { priceHistoryForProduct } from "../db/repositories/prices";
 import type { RootStackParamList } from "../navigation/types";
 import { useTokens } from "../theme/tokens";
 import { formatMoney } from "../utils/money";
+import { isProbablyBarcode } from "../utils/barcode";
 import { unitPriceBaseLabel, unitPriceMinor } from "../utils/units";
 
 type LibraryNavigation = NativeStackNavigationProp<RootStackParamList>;
 
-export function LibraryScreen({ navigation }: { navigation: LibraryNavigation }) {
+export function LibraryScreen({
+  navigation,
+  route,
+}: {
+  navigation: LibraryNavigation;
+  route: RouteProp<RootStackParamList, "Library">;
+}) {
   const [query, setQuery] = useState("");
   const [products, setProducts] = useState<ProductListItem[]>(() =>
     searchProducts(getDatabase(), ""),
   );
-  const [detail, setDetail] = useState<ProductDetail | null>(null);
+  // Home opens a specific product straight away.
+  const [detail, setDetail] = useState<ProductDetail | null>(() =>
+    route.params?.productId === undefined ? null : getProductDetail(getDatabase(), route.params.productId),
+  );
+  const [addOpen, setAddOpen] = useState(false);
 
   const refresh = useCallback(
     () => setProducts(searchProducts(getDatabase(), query)),
@@ -74,7 +94,7 @@ export function LibraryScreen({ navigation }: { navigation: LibraryNavigation })
               onPress={() => setDetail(getProductDetail(getDatabase(), item.id))}
               accessibilityRole="button"
               android_ripple={{ color: t.line }}
-              className={`min-h-16 flex-row items-center gap-3 py-3 ${index === products.length - 1 ? "" : "border-b border-line dark:border-line-dark"}`}
+              className={`min-h-16 flex-row items-center gap-3 py-3 ${index === products.length - 1 ? "" : "border-b border-line"}`}
             >
               <View className="flex-1">
                 <Text>{item.name}</Text>
@@ -83,7 +103,7 @@ export function LibraryScreen({ navigation }: { navigation: LibraryNavigation })
                 </Text>
               </View>
               {item.lastPriceMinor !== null ? (
-                <Text className="font-medium">
+                <Text className="font-semibold">
                   {formatMoney({ amountMinor: item.lastPriceMinor, currency: item.lastCurrency ?? "PHP" })}
                 </Text>
               ) : null}
@@ -96,10 +116,20 @@ export function LibraryScreen({ navigation }: { navigation: LibraryNavigation })
             label="Add product"
             icon="add"
             variant="secondary"
-            onPress={() => navigation.navigate("ManualProduct", {})}
+            onPress={() => setAddOpen(true)}
           />
         </View>
       </View>
+
+      {addOpen ? (
+        <AddProductSheet
+          onClose={() => setAddOpen(false)}
+          onGo={(go) => {
+            setAddOpen(false);
+            go(navigation);
+          }}
+        />
+      ) : null}
 
       {detail !== null ? (
         <ProductDetailModal
@@ -182,13 +212,13 @@ function ProductDetailModal({
             </Text>
           }
           renderItem={({ item }) => (
-            <View className="flex-row items-center justify-between gap-3 border-b border-line py-3 dark:border-line-dark">
+            <View className="flex-row items-center justify-between gap-3 border-b border-line py-3">
               <Text tone="secondary">
                 {item.capturedAt.toLocaleDateString()}
                 {item.promotionalPriceMinor !== null ? ", promo" : ""}
                 {item.loyaltyPriceMinor !== null ? ", loyalty" : ""}
               </Text>
-              <Text className="font-medium">
+              <Text className="font-semibold">
                 {formatMoney({ amountMinor: item.regularPriceMinor, currency: item.currency })}
               </Text>
             </View>
@@ -227,5 +257,59 @@ function ProductDetailModal({
         </View>
       </View>
     </FullScreenModal>
+  );
+}
+
+/**
+ * The ways to add a product without snapping it (snapping is the center tab):
+ * scan a barcode live, type one, or add a product that has none.
+ */
+function AddProductSheet({
+  onClose,
+  onGo,
+}: {
+  onClose: () => void;
+  onGo: (go: (navigation: LibraryNavigation) => void) => void;
+}) {
+  const [barcode, setBarcode] = useState("");
+  const typed = barcode.trim();
+  const valid = isProbablyBarcode(typed);
+  const lookUp = () => {
+    if (valid) {
+      onGo((navigation) => navigation.navigate("ProductResolve", { barcode: typed }));
+    }
+  };
+  return (
+    <BottomSheet onClose={onClose}>
+      <Text variant="title">Add product</Text>
+      <ListRow
+        icon="scan-outline"
+        title="Scan barcode live"
+        detail="Then photograph or type the price"
+        onPress={() => onGo((navigation) => navigation.navigate("Scanner"))}
+      />
+      <ListRow
+        icon="create-outline"
+        title="Add product without barcode"
+        onPress={() => onGo((navigation) => navigation.navigate("ManualProduct", {}))}
+        last
+      />
+      <View className="mt-4">
+        <Field label="Type a barcode" hint={typed !== "" && !valid ? "Enter a valid barcode (6–14 digits)" : undefined}>
+          <View className="flex-row gap-2">
+            <View className="flex-1">
+              <AppTextInput
+                value={barcode}
+                onChangeText={setBarcode}
+                keyboardType="number-pad"
+                placeholder="e.g. 4800017234567"
+                onSubmitEditing={lookUp}
+              />
+            </View>
+            <PrimaryButton label="Look up" variant="secondary" disabled={!valid} onPress={lookUp} />
+          </View>
+        </Field>
+      </View>
+    </BottomSheet>
   );
 }

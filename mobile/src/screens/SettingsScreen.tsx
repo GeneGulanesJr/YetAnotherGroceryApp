@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
-import { Alert, ScrollView, View } from "react-native";
+import { Alert, Pressable, ScrollView, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
@@ -10,8 +11,17 @@ import {
   getDefaultCurrency,
   getPendingMutationCount,
   setDefaultCurrency,
+  setMetaValue,
 } from "../db/repositories/meta";
 import { useAppStore } from "../store/useAppStore";
+import {
+  palettes,
+  resolveTheme,
+  THEME_META_KEY,
+  THEME_PREFERENCES,
+  useTheme,
+  type ThemePreference,
+} from "../theme/tokens";
 import { syncConfigured, syncNow } from "../sync/client";
 import type { RootStackParamList } from "../navigation/types";
 
@@ -55,6 +65,11 @@ export function SettingsScreen() {
             />
           ))}
         </View>
+
+        <Text variant="label" tone="secondary" className="mt-8">
+          Theme
+        </Text>
+        <ThemePicker />
 
         <Text variant="label" tone="secondary" className="mt-8">
           Account
@@ -110,5 +125,66 @@ export function SettingsScreen() {
         </Text>
       </ScrollView>
     </ScreenContainer>
+  );
+}
+
+const THEME_LABELS: Record<ThemePreference, string> = {
+  auto: "Automatic",
+  palengke: "Palengke",
+  resibo: "Resibo",
+  jadenight: "Jade night",
+  bubblegum: "Bubblegum",
+  cream: "Cream",
+  night: "Night market",
+};
+
+/** One sticker button per preference; the choice applies at once and is saved on this phone. */
+function ThemePicker() {
+  const pref = useAppStore((state) => state.theme);
+  const setTheme = useAppStore((state) => state.setTheme);
+  const { t, shadow } = useTheme();
+
+  const choose = (next: ThemePreference) => {
+    setMetaValue(getDatabase(), THEME_META_KEY, next);
+    setTheme(next);
+  };
+
+  return (
+    <View className="mt-3 flex-row flex-wrap justify-between gap-y-3">
+      {THEME_PREFERENCES.map((option) => {
+        const selected = option === pref;
+        return (
+          <Pressable
+            key={option}
+            onPress={() => choose(option)}
+            accessibilityRole="radio"
+            accessibilityState={{ checked: selected }}
+            accessibilityHint={option === "auto" ? "Palengke in light mode, Jade night in dark mode" : undefined}
+            android_ripple={{ color: t.line }}
+            style={{ boxShadow: selected ? shadow : undefined }}
+            className={`min-h-14 w-[48%] flex-row items-center gap-2.5 overflow-hidden rounded-2xl border-outline px-3 py-2 ${selected ? "border-[3px] bg-card" : "border-2 bg-sand"}`}
+          >
+            <Swatch option={option} />
+            <Text className={`flex-1 ${selected ? "font-extrabold" : "font-semibold"}`} numberOfLines={2}>
+              {THEME_LABELS[option]}
+            </Text>
+            {selected ? <Ionicons name="checkmark-circle" size={20} color={t.ink} /> : null}
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+/** The theme's paper ringed in the current outline; Automatic is half its light theme, half its dark theme. */
+function Swatch({ option }: { option: ThemePreference }) {
+  const halves =
+    option === "auto" ? [palettes[resolveTheme("auto", "light")], palettes[resolveTheme("auto", "dark")]] : [palettes[option]];
+  return (
+    <View className="h-7 w-7 flex-row overflow-hidden rounded-full border-2 border-outline">
+      {halves.map((palette) => (
+        <View key={palette.paper} style={{ backgroundColor: palette.paper }} className="flex-1" />
+      ))}
+    </View>
   );
 }

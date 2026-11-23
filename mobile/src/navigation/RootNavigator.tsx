@@ -1,8 +1,14 @@
-import { NavigationContainer, type Theme } from "@react-navigation/native";
+import { NavigationContainer, useNavigation, type Theme } from "@react-navigation/native";
+import { Pressable } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { useColorScheme } from "react-native";
 
 import { AuthScreen } from "../screens/AuthScreen";
+import { LibraryScreen } from "../screens/LibraryScreen";
+import { ListsScreen } from "../screens/ListsScreen";
+import { SettingsScreen } from "../screens/SettingsScreen";
+import { ShoppingScreen } from "../screens/ShoppingScreen";
 import { ManualProductScreen } from "../screens/ManualProductScreen";
 import { PriceCaptureScreen } from "../screens/PriceCaptureScreen";
 import { PriceTagScreen } from "../screens/PriceTagScreen";
@@ -10,44 +16,67 @@ import { ProductResolveScreen } from "../screens/ProductResolveScreen";
 import { ReceiptCaptureScreen } from "../screens/ReceiptCaptureScreen";
 import { ScannerScreen } from "../screens/ScannerScreen";
 import { SnapItemScreen } from "../screens/SnapItemScreen";
-import { colors, FONT_FAMILY } from "../theme/tokens";
-import { MainTabs } from "./MainTabs";
+import { FONT_FAMILY, isDarkTheme, useTheme, type ThemeTokens } from "../theme/tokens";
 import type { RootStackParamList } from "./types";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const regular = { fontFamily: FONT_FAMILY, fontWeight: "400" } as const;
-const medium = { fontFamily: FONT_FAMILY, fontWeight: "500" } as const;
+const semibold = { fontFamily: FONT_FAMILY, fontWeight: "600" } as const;
+const extrabold = { fontFamily: FONT_FAMILY, fontWeight: "800" } as const;
 
-/** Headers, tab bar and screen backgrounds from the Kami tokens; Kami has no bold. */
-function navigationTheme(dark: boolean): Theme {
-  const t = colors[dark ? "dark" : "light"];
+/** Headers, tab bar and screen backgrounds from the active theme. */
+function navigationTheme(dark: boolean, t: ThemeTokens): Theme {
   return {
     dark,
     colors: {
-      primary: t.brandText,
+      primary: t.ink,
       background: t.paper,
       card: t.paper,
       text: t.ink,
-      border: t.line,
+      border: t.outline,
       notification: t.cautionFg,
     },
-    fonts: { regular, medium, bold: medium, heavy: medium },
+    fonts: { regular, medium: semibold, bold: extrabold, heavy: extrabold },
   };
 }
 
+/** Settings lives behind the gear on the home header (there is no tab bar). */
+function SettingsGear() {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { t } = useTheme();
+  return (
+    <Pressable
+      onPress={() => navigation.navigate("Settings")}
+      accessibilityRole="button"
+      accessibilityLabel="Settings"
+      hitSlop={8}
+      className="h-12 w-12 items-center justify-center"
+    >
+      <Ionicons name="settings-outline" size={26} color={t.ink} />
+    </Pressable>
+  );
+}
+
 export function RootNavigator() {
-  const scheme = useColorScheme();
-  const isDark = scheme === "dark";
+  const { name, t } = useTheme();
 
   return (
-    <NavigationContainer theme={navigationTheme(isDark)}>
-      <Stack.Navigator screenOptions={{ headerShadowVisible: false }}>
+    <NavigationContainer theme={navigationTheme(isDarkTheme(name), t)}>
+      <Stack.Navigator
+        screenOptions={{
+          headerShadowVisible: false,
+          headerTitleStyle: { fontFamily: FONT_FAMILY, fontWeight: "800", fontSize: 24 },
+        }}
+      >
         <Stack.Screen
-          name="MainTabs"
-          component={MainTabs}
-          options={{ headerShown: false }}
+          name="Home"
+          component={ShoppingScreen}
+          options={{ title: "Shopping", headerRight: () => <SettingsGear /> }}
         />
+        <Stack.Screen name="Lists" component={ListsScreen} options={{ title: "Lists" }} />
+        <Stack.Screen name="Library" component={LibraryScreen} options={{ title: "Library" }} />
+        <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: "Settings" }} />
         <Stack.Screen
           name="Auth"
           component={AuthScreen}
