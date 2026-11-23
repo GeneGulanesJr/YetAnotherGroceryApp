@@ -83,6 +83,7 @@
         }
       ],
       "expo-background-task",
+      "./modules/item-cutout/app.plugin.js",
       [
         "expo-splash-screen",
         {

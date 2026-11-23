@@ -9,9 +9,10 @@ dist/
 web-build/
 expo-env.d.ts
 
-# Native builds
-ios/
-android/
+# Native builds (root only: local Expo modules keep their android/ sources)
+/ios/
+/android/
+modules/*/android/build/
 
 # EAS
 .env

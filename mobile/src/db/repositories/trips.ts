@@ -1,5 +1,6 @@
-import { and, count, desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, count, desc, eq, inArray, isNull, sql, type SQL } from "drizzle-orm";
 import {
+  imageCutouts,
   products,
   purchases,
   stores,
@@ -184,6 +185,8 @@ export interface TripPurchaseLine
   packageSize: string | null;
   /** The photo snapped for this product during the trip, else the product photo, else null. */
   photoUri: string | null;
+  /** Background-removed art for that photo, when this device made one. */
+  cutout: { uri: string; width: number; height: number } | null;
 }
 
 /**
@@ -191,14 +194,17 @@ export interface TripPurchaseLine
  * (prices.source_image_id) in the same save, so the line's photo is the
  * latest price photo for that product captured since the trip started.
  */
-const photoUri = sql<string | null>`coalesce(
-  (select coalesce(i.thumbnail_uri, i.local_uri) from prices p
+const chosenImage = (column: SQL) => sql<string | null>`coalesce(
+  (select ${column} from prices p
      join images i on i.id = p.source_image_id and i.deleted_at is null
     where p.product_id = ${purchases.productId} and p.deleted_at is null
       and p.captured_at >= ${trips.startedAt}
     order by p.captured_at desc limit 1),
-  (select coalesce(i.thumbnail_uri, i.local_uri) from images i
+  (select ${column} from images i
     where i.id = ${products.photoImageId} and i.deleted_at is null))`;
+const photoUri = chosenImage(sql`coalesce(i.thumbnail_uri, i.local_uri)`);
+// Same image as photoUri, so a line's cutout always belongs to the photo it shows.
+const photoImageId = chosenImage(sql`case when coalesce(i.thumbnail_uri, i.local_uri) is not null then i.id end`);
 
 export function getTripPurchases(db: Db, tripId: string): TripPurchaseLine[] {
   return db
@@ -209,10 +215,12 @@ export function getTripPurchases(db: Db, tripId: string): TripPurchaseLine[] {
       unit: products.unit,
       packageSize: products.packageSize,
       photoUri,
+      cutout: imageCutouts,
     })
     .from(purchases)
     .innerJoin(products, eq(products.id, purchases.productId))
     .innerJoin(trips, eq(trips.id, purchases.tripId))
+    .leftJoin(imageCutouts, sql`${imageCutouts.imageId} = ${photoImageId}`)
     .where(and(eq(purchases.tripId, tripId), isNull(purchases.deletedAt)))
     .orderBy(purchases.createdAt)
     .all()
@@ -229,6 +237,7 @@ export function getTripPurchases(db: Db, tripId: string): TripPurchaseLine[] {
       unit: row.unit ?? null,
       packageSize: row.packageSize ?? null,
       photoUri: row.photoUri ?? null,
+      cutout: row.cutout === null ? null : { uri: row.cutout.uri, width: row.cutout.width, height: row.cutout.height },
     }));
 }
 

@@ -1,4 +1,4 @@
-import { createImageRecord } from "../repositories/images";
+import { createImageRecord, saveImageCutout } from "../repositories/images";
 import { recordPrice } from "../repositories/prices";
 import { createProduct } from "../repositories/products";
 import { createStore } from "../repositories/stores";
@@ -180,6 +180,34 @@ describe("shopping trips", () => {
 
       const photos = Object.fromEntries(getTripPurchases(db, trip.id).map((line) => [line.productName, line.photoUri]));
       expect(photos).toEqual({ Milk: "file:///snap-t.jpg", Rice: "file:///product.jpg", Salt: null });
+    });
+
+    it("returns the cutout of the chosen photo only, without touching the outbox", () => {
+      const oldSnap = createImageRecord(db, { localUri: "file:///old.jpg" });
+      const snap = createImageRecord(db, { localUri: "file:///snap.jpg" });
+      const plain = createImageRecord(db, { localUri: "file:///plain.jpg" });
+      const milk = createProduct(db, { name: "Milk" });
+      const rice = createProduct(db, { name: "Rice" });
+      const trip = startTrip(db, { currency: "PHP" });
+      const earlier = new Date(Date.now() + 1_000);
+      const later = new Date(Date.now() + 2_000);
+      recordPrice(db, { productId: milk.id, currency: "PHP", regularPriceMinor: 100, sourceImageId: oldSnap.id, capturedAt: earlier });
+      recordPrice(db, { productId: milk.id, currency: "PHP", regularPriceMinor: 100, sourceImageId: snap.id, capturedAt: later });
+      recordPrice(db, { productId: rice.id, currency: "PHP", regularPriceMinor: 100, sourceImageId: plain.id });
+      for (const product of [milk, rice]) {
+        addProductToTrip(db, { tripId: trip.id, productId: product.id, currency: "PHP", shelfPriceMinor: 100 });
+      }
+      const pending = getPendingMutationCount(db);
+
+      saveImageCutout(db, { imageId: oldSnap.id, uri: "file:///old-cutout.png", width: 9, height: 9 });
+      saveImageCutout(db, { imageId: snap.id, uri: "file:///cutout.png", width: 120, height: 300 });
+
+      expect(getPendingMutationCount(db)).toBe(pending);
+      const lines = Object.fromEntries(getTripPurchases(db, trip.id).map((line) => [line.productName, line]));
+      expect(lines.Milk.cutout).toEqual({ uri: "file:///cutout.png", width: 120, height: 300 });
+      expect(lines.Milk.photoUri).toBe("file:///snap.jpg");
+      expect(lines.Rice.cutout).toBeNull();
+      expect(lines.Rice.photoUri).toBe("file:///plain.jpg");
     });
   });
 });
