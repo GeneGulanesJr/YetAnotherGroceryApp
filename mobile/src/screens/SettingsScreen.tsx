@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
+import { authConfigured } from "../auth/config";
 import { ScreenContainer } from "../components/ScreenContainer";
 import { Card, Chip, ListRow, PrimaryButton, Text } from "../components/ui";
 import { getDatabase } from "../db/database";
@@ -71,16 +72,20 @@ export function SettingsScreen() {
         </Text>
         <ThemePicker />
 
-        <Text variant="label" tone="secondary" className="mt-8">
-          Account
-        </Text>
-        <ListRow
-          icon="person-circle-outline"
-          title="Sign in or manage account"
-          detail="Optional, for sync between devices"
-          onPress={() => navigation.navigate("Auth")}
-          last
-        />
+        {authConfigured ? (
+          <>
+            <Text variant="label" tone="secondary" className="mt-8">
+              Account
+            </Text>
+            <ListRow
+              icon="person-circle-outline"
+              title="Sign in or manage account"
+              detail="Optional, for sync between devices"
+              onPress={() => navigation.navigate("Auth")}
+              last
+            />
+          </>
+        ) : null}
 
         <Text variant="label" tone="secondary" className="mb-2 mt-8">
           Synchronization

@@ -5,13 +5,34 @@ monitor price history, verify receipt accuracy, and analyze long-term grocery
 spending. Built with offline-first support, cloud synchronization, and
 personal analytics to help users make smarter shopping decisions.
 
+**[Open the landing page](https://yetanothergroceryapp.gulanesgene.workers.dev/)** or
+**[download the Android APK](https://yetanothergroceryapp.gulanesgene.workers.dev/download/yaga.apk)**
+(version 0.1.0, 102 MB, a preview build; Android asks once to allow installs from your browser).
+
+## Screenshots
+
+<table>
+  <tr>
+    <td width="33%"><img src="docs/screenshots/home.jpg" alt="Home screen: the run in progress, lists, library, past runs and a Snap item button"></td>
+    <td width="33%"><img src="docs/screenshots/run-over-budget.jpg" alt="A grocery run over budget: photo stickers sized by price and an IOU slip for ₱160.50"></td>
+    <td width="33%"><img src="docs/screenshots/themes-jade-night.jpg" alt="Settings in the Jade night theme with the seven theme options"></td>
+  </tr>
+  <tr>
+    <td>Home is the hub, with one main action: Snap item.</td>
+    <td>During a run, stickers are sized by price. Over budget, the wallet becomes an IOU slip.</td>
+    <td>Six themes, including Jade night.</td>
+  </tr>
+</table>
+
+<img src="docs/screenshots/landing.jpg" alt="The yaga landing page: a giant ₱800 budget with the sticker logo, a download button and a docked wallet">
+
 ## Repository layout
 
 | Path | What it is | Status |
 | --- | --- | --- |
 | `mobile/` | Expo (SDK 57) + React Native app — the data-capture surface | **Working core**: offline SQLite + barcode scanning + trips/lists/library; verified on device via Expo Go |
 | `web-desktop/` | Next.js 14 web app + Tauri 2 desktop shell — the analytics surface | **Data foundation live**: SQLite replica + SQL analytics via DataSource, dashboard wired, pull-sync + CSV exports |
-| `site/` + `wrangler.jsonc` | Static landing page with a playable cart demo, served by the `yetanothergroceryapp` Cloudflare Worker (Workers Builds on push) | Live on merge to `main` |
+| `site/`, `worker/`, `wrangler.jsonc` | Landing page with a playable cart demo, plus the APK download from Cloudflare R2, served by the `yetanothergroceryapp` Worker (deploys on merge to `main`) | Live |
 | `design/logo/` | Final "yaga" logo (Jade Palengke): SVG/PNG, generator scripts, app icon/splash sources, colour research | Final |
 | `api/` | Shared sync + analytics backend (Fastify + Drizzle, file/libSQL) | **Dev-ready**: sync push/pull + analytics endpoints, 20 tests; deployment + Clerk auth pending |
 | `specs.md` | Functional/product specification | Stable |

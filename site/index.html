@@ -54,6 +54,8 @@ p { margin: 0; }
 .hero-copy { padding: 22px 5vw 0; max-width: 720px; }
 .hero-copy h1 { font-weight: 800; font-size: clamp(1.5rem, 3.2vw, 2.25rem); line-height: 1.12; margin: 0 0 12px; max-width: 22ch; }
 .hero-copy p { font-size: 1.125rem; max-width: 44ch; }
+.get { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin-top: 26px; }
+.get p { font-size: 0.9375rem; max-width: 34ch; }
 
 /* the aisle: one shelf per item, stickers placed by eye */
 .aisle { padding: 40px 0 24px; }
@@ -144,6 +146,10 @@ html::-webkit-scrollbar { display: none; }
   <div class="hero-copy">
     <h1>yaga is a grocery budget app. This is your budget for today's run.</h1>
     <p>Six things on the list. Scroll down the aisle: each one you pass goes in the cart, and the wallet at the bottom of the screen pays for it, the way the app shows a run.</p>
+    <div class="get">
+      <a class="button" href="/download/yaga.apk" download>Download for Android</a>
+      <p>APK, version 0.1.0, 102 MB. A preview build: Android asks once to allow installs from your browser.</p>
+    </div>
   </div>
 </header>
 
@@ -155,8 +161,8 @@ html::-webkit-scrollbar { display: none; }
     <p id="co-line">This is the cart, each sticker as big as what it costs. Tap one to put it back on the shelf.</p>
     <div class="pile" id="pile"></div>
     <div class="out">
-      <a class="button" href="https://github.com/GeneGulanesJr/YetAnotherGroceryApp">Follow the build on GitHub</a>
-      <p class="small">The Android app is in development. No sign-up and no ads; your lists and prices stay on your phone. yaga is short for YetAnotherGroceryApp. Set in Bricolage Grotesque (SIL Open Font License).</p>
+      <a class="button" href="/download/yaga.apk" download>Download for Android</a>
+      <p class="small">APK, version 0.1.0, 102 MB, a preview build. No sign-up and no ads; your lists and prices stay on your phone. Source and progress on <a href="https://github.com/GeneGulanesJr/YetAnotherGroceryApp">GitHub</a>. yaga is short for YetAnotherGroceryApp. Set in Bricolage Grotesque (SIL Open Font License).</p>
     </div>
   </section>
 </main>
