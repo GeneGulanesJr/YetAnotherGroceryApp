@@ -11,6 +11,7 @@ personal analytics to help users make smarter shopping decisions.
 | --- | --- | --- |
 | `mobile/` | Expo (SDK 57) + React Native app — the data-capture surface | **Working core**: offline SQLite + barcode scanning + trips/lists/library; verified on device via Expo Go |
 | `web-desktop/` | Next.js 14 web app + Tauri 2 desktop shell — the analytics surface | **Data foundation live**: SQLite replica + SQL analytics via DataSource, dashboard wired, pull-sync + CSV exports |
+| `site/` + `wrangler.jsonc` | Static landing page with a playable cart demo, served by the `yetanothergroceryapp` Cloudflare Worker (Workers Builds on push) | Live on merge to `main` |
 | `design/logo/` | Final "yaga" logo (Jade Palengke): SVG/PNG, generator scripts, app icon/splash sources, colour research | Final |
 | `api/` | Shared sync + analytics backend (Fastify + Drizzle, file/libSQL) | **Dev-ready**: sync push/pull + analytics endpoints, 20 tests; deployment + Clerk auth pending |
 | `specs.md` | Functional/product specification | Stable |
