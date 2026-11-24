@@ -29,6 +29,13 @@
       "when": 1789594665472,
       "tag": "0003_receipt_aliases",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1795474575035,
+      "tag": "0004_image_cutouts",
+      "breakpoints": true
     }
   ]
 }

@@ -1,16 +1,22 @@
 import { useState } from "react";
-import { Image, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Image, PixelRatio, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import type { TripPurchaseLine } from "../db/repositories/trips";
 import { moneyColors, useTheme } from "../theme/tokens";
 import { formatMoney } from "../utils/money";
-import { breakDownCash, layoutStickers, STICKER_DEFAULTS, type Box } from "../utils/wallet";
+import { breakDownCash, layoutStickers, type Box, type StickerRect } from "../utils/wallet";
 import { Text } from "./ui";
 
 const TILT = [-2.5, 1.8, -1.2, 2.4, -1.8, 1.2, -2, 1.5];
 // Room inside the box for tilted corners and the offset shadow.
 const PAD = 8;
+// Bold digits at the 12px floor, plus the label's padding and the sticker border.
+const PRICE_CHAR_WIDTH = 7;
+const PRICE_CHROME = 12;
+
+const lineCost = (line: TripPurchaseLine) =>
+  formatMoney({ amountMinor: line.shelfPriceMinor * line.quantity, currency: line.currency });
 
 /**
  * What's in the cart as photo stickers, newest first, area proportional to
@@ -27,12 +33,26 @@ export function CartBox({
   onPressMore: () => void;
 }) {
   const [box, setBox] = useState<Box | null>(null);
+  // Lines whose cutout file failed to load go back to the square full photo.
+  const [broken, setBroken] = useState<ReadonlySet<string>>(new Set());
   const newest = [...lines].reverse();
-  const { sides, hidden } =
+  const cutoutOf = (line: TripPurchaseLine) => (broken.has(line.id) ? null : line.cutout);
+  const fontScale = Math.min(PixelRatio.getFontScale(), 1.3);
+  const { stickers, more, hidden } =
     box === null
-      ? { sides: [], hidden: 0 }
+      ? { stickers: [], more: null, hidden: 0 }
       : layoutStickers(
-          newest.map((line) => line.shelfPriceMinor * line.quantity),
+          newest.map((line) => {
+            const cost = line.shelfPriceMinor * line.quantity;
+            const cutout = cutoutOf(line);
+            return cutout === null
+              ? { cost }
+              : {
+                  cost,
+                  aspect: cutout.width / cutout.height,
+                  minWidth: Math.ceil(lineCost(line).length * PRICE_CHAR_WIDTH * fontScale) + PRICE_CHROME,
+                };
+          }),
           { width: box.width - 2 * PAD, height: box.height - 2 * PAD },
         );
 
@@ -48,12 +68,20 @@ export function CartBox({
           </Text>
         </View>
       ) : (
-        <View className="flex-row flex-wrap items-end" style={{ gap: STICKER_DEFAULTS.gap, padding: PAD }}>
-          {sides.map((side, i) => (
-            <Sticker key={newest[i].id} line={newest[i]} side={side} tilt={TILT[i % TILT.length]} onPress={() => onPressLine(newest[i])} />
+        <>
+          {stickers.map((rect, i) => (
+            <Sticker
+              key={newest[i].id}
+              line={newest[i]}
+              cutout={cutoutOf(newest[i])}
+              rect={rect}
+              tilt={TILT[i % TILT.length]}
+              onPress={() => onPressLine(newest[i])}
+              onCutoutError={() => setBroken((ids) => new Set(ids).add(newest[i].id))}
+            />
           ))}
-          {hidden > 0 ? <MoreSticker count={hidden} side={STICKER_DEFAULTS.minSide} onPress={onPressMore} /> : null}
-        </View>
+          {more !== null ? <MoreSticker count={hidden} rect={more} onPress={onPressMore} /> : null}
+        </>
       )}
     </View>
   );
@@ -61,17 +89,22 @@ export function CartBox({
 
 function Sticker({
   line,
-  side,
+  cutout,
+  rect,
   tilt,
   onPress,
+  onCutoutError,
 }: {
   line: TripPurchaseLine;
-  side: number;
+  cutout: TripPurchaseLine["cutout"];
+  rect: StickerRect;
   tilt: number;
   onPress: () => void;
+  onCutoutError: () => void;
 }) {
   const { t, shadow } = useTheme();
-  const cost = formatMoney({ amountMinor: line.shelfPriceMinor * line.quantity, currency: line.currency });
+  const cost = lineCost(line);
+  const side = Math.min(rect.width, rect.height);
   const priceSize = side >= 140 ? 18 : side >= 100 ? 15 : 13;
   const showName = side >= 110 || line.photoUri === null;
   return (
@@ -79,10 +112,20 @@ function Sticker({
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`${line.productName}, ${cost}${line.quantity > 1 ? `, ${line.quantity} pieces` : ""}. Change quantity or remove`}
-      style={{ width: side, height: side, transform: [{ rotate: `${tilt}deg` }], boxShadow: shadow }}
+      style={{
+        position: "absolute",
+        left: PAD + rect.x,
+        top: PAD + rect.y,
+        width: rect.width,
+        height: rect.height,
+        transform: [{ rotate: `${tilt}deg` }],
+        boxShadow: shadow,
+      }}
       className="overflow-hidden rounded-2xl border-2 border-outline bg-sand"
     >
-      {line.photoUri !== null ? (
+      {cutout !== null ? (
+        <Image source={{ uri: cutout.uri }} style={{ flex: 1, margin: 3 }} resizeMode="contain" onError={onCutoutError} />
+      ) : line.photoUri !== null ? (
         <Image source={{ uri: line.photoUri }} style={StyleSheet.absoluteFill} resizeMode="cover" />
       ) : (
         <View className="items-center pt-2">
@@ -96,7 +139,8 @@ function Sticker({
           </Text>
         </View>
       ) : null}
-      <View className="absolute inset-x-1 bottom-1 rounded-lg bg-card px-1.5 py-0.5">
+      {/* On a cutout the price sits in its own strip, so it never covers the item. */}
+      <View className={cutout !== null ? "bg-card px-1 py-0.5" : "absolute inset-x-1 bottom-1 rounded-lg bg-card px-1.5 py-0.5"}>
         {showName ? (
           <Text numberOfLines={1} className="text-xs font-semibold" style={{ lineHeight: 15 }} maxFontSizeMultiplier={1.2}>
             {line.productName}
@@ -105,7 +149,7 @@ function Sticker({
         <Text
           numberOfLines={1}
           adjustsFontSizeToFit
-          minimumFontScale={0.9}
+          minimumFontScale={cutout !== null ? 12 / priceSize : 0.9}
           maxFontSizeMultiplier={1.3}
           className="font-extrabold"
           style={{ fontSize: priceSize, lineHeight: Math.round(priceSize * 1.25) }}
@@ -117,13 +161,13 @@ function Sticker({
   );
 }
 
-function MoreSticker({ count, side, onPress }: { count: number; side: number; onPress: () => void }) {
+function MoreSticker({ count, rect, onPress }: { count: number; rect: StickerRect; onPress: () => void }) {
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`${count} more items. Show all`}
-      style={{ width: side, height: side }}
+      style={{ position: "absolute", left: PAD + rect.x, top: PAD + rect.y, width: rect.width, height: rect.height }}
       className="items-center justify-center rounded-2xl border-2 border-dashed border-outline bg-card"
     >
       <Text className="font-extrabold" maxFontSizeMultiplier={1.2}>

@@ -3,10 +3,13 @@ import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 import { sha256 } from "js-sha256";
 
+import { segmentSubjects, type CutoutSubject } from "../../modules/item-cutout";
 import { newId } from "../db/context";
-import { createImageRecord } from "../db/repositories/images";
+import { createImageRecord, saveImageCutout } from "../db/repositories/images";
 import type { ImageRecord } from "../db/schema";
 import type { Db } from "../db/types";
+import { pickSubject } from "./cutout";
+import type { OcrResult } from "./ocr";
 
 /**
  * Image pipeline per tech.mobile.md: compress via expo-image-manipulator,
@@ -73,6 +76,45 @@ export async function ingestImage(db: Db, sourceUri: string): Promise<IngestedIm
   });
 
   return { record };
+}
+
+/** Deletes a candidate cutout file; a leftover in the cache is harmless. */
+export function discardCutout(cutout: CutoutSubject): void {
+  try {
+    new File(cutout.uri).delete();
+  } catch {
+    // Already gone.
+  }
+}
+
+/**
+ * Isolates the main product on-device, on the stored image so subject and OCR
+ * boxes share one space. Any failure (no model yet, no Play services) is null.
+ */
+export async function findCutout(record: ImageRecord, ocr: OcrResult | null): Promise<CutoutSubject | null> {
+  if (record.localUri === null || record.width === null || record.height === null) {
+    return null;
+  }
+  try {
+    const subjects = await segmentSubjects(record.localUri);
+    const chosen = pickSubject(subjects, { width: record.width, height: record.height }, ocr?.lines ?? []);
+    subjects.filter((subject) => subject !== chosen).forEach(discardCutout);
+    return chosen;
+  } catch {
+    return null;
+  }
+}
+
+/** Stores the accepted cutout. A failure only means the item keeps its full photo. */
+export function keepCutout(db: Db, imageId: string, cutout: CutoutSubject): void {
+  const target = new File(imagesDirectory(), `${imageId}-cutout.png`);
+  try {
+    new File(cutout.uri).copySync(target);
+    saveImageCutout(db, { imageId, uri: target.uri, width: cutout.fileWidth, height: cutout.fileHeight });
+  } catch {
+    discardCutout({ ...cutout, uri: target.uri });
+  }
+  discardCutout(cutout);
 }
 
 /** Opens the photo library for a product photo (permission asked on first use). */

@@ -123,5 +123,11 @@ export const migrations: EmbeddedMigration[] = [
       "CREATE INDEX `receipt_aliases_deleted_at_idx` ON `receipt_aliases` (`deleted_at`);",
       "CREATE INDEX `receipt_aliases_sync_status_idx` ON `receipt_aliases` (`sync_status`);"
     ]
+  },
+  {
+    id: "0004_image_cutouts",
+    statements: [
+      "CREATE TABLE `image_cutouts` (\n\t`image_id` text PRIMARY KEY NOT NULL,\n\t`uri` text NOT NULL,\n\t`width` integer NOT NULL,\n\t`height` integer NOT NULL,\n\t`created_at` integer NOT NULL,\n\tFOREIGN KEY (`image_id`) REFERENCES `images`(`id`) ON UPDATE no action ON DELETE no action\n);"
+    ]
   }
 ];

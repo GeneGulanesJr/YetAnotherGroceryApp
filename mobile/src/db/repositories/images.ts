@@ -1,5 +1,5 @@
 import { and, eq, isNull } from "drizzle-orm";
-import { images, type ImageRecord } from "../schema";
+import { imageCutouts, images, type ImageRecord } from "../schema";
 import { now } from "../context";
 import { trackInsert, trackUpdate } from "../outbox";
 import type { Db } from "../types";
@@ -32,6 +32,15 @@ export function createImageRecord(db: Db, input: ImageInput): ImageRecord {
     uploadStatus: "pending",
     capturedAt: input.capturedAt ?? now(),
   });
+}
+
+/** Local-only sticker art: written directly, so it never enters the sync outbox. */
+export function saveImageCutout(
+  db: Db,
+  input: { imageId: string; uri: string; width: number; height: number },
+): void {
+  const row = { ...input, createdAt: now() };
+  db.insert(imageCutouts).values(row).onConflictDoUpdate({ target: imageCutouts.imageId, set: row }).run();
 }
 
 export function markImageUploaded(

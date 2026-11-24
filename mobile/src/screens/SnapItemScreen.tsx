@@ -1,5 +1,5 @@
-import { useRef, useState } from "react";
-import { View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { Image, View } from "react-native";
 import * as Haptics from "expo-haptics";
 import { CameraView, scanFromURLAsync, useCameraPermissions } from "expo-camera";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -15,7 +15,8 @@ import {
 } from "../components/camera";
 import { PriceReview } from "../components/PriceReview";
 import { AppTextInput, Card, Chip, Notice, PrimaryButton, Text } from "../components/ui";
-import { ingestImage } from "../capture/images";
+import type { CutoutSubject } from "../../modules/item-cutout";
+import { discardCutout, findCutout, ingestImage, keepCutout } from "../capture/images";
 import { guessItemNames } from "../capture/nameParse";
 import { runOcr, type OcrResult } from "../capture/ocr";
 import { assessPrice, parsePriceCandidates } from "../capture/priceParse";
@@ -40,6 +41,23 @@ interface Shot {
   /** Every code found, best first; `code` is the one the user is going with. */
   codes: ScannedCode[];
   code: ScannedCode | null;
+  /** On-device preview of the main item; arrives after review opens, if at all. */
+  cutout: CutoutSubject | null;
+  fullPhoto: boolean;
+}
+
+/** The shot still waiting on a cutout, and the unsaved candidate file it owns. */
+interface CutoutSlot {
+  imageId: string | null;
+  cutout: CutoutSubject | null;
+}
+
+function dropCutout(slot: CutoutSlot) {
+  if (slot.cutout !== null) {
+    discardCutout(slot.cutout);
+  }
+  slot.imageId = null;
+  slot.cutout = null;
 }
 
 type Phase =
@@ -65,10 +83,21 @@ export function SnapItemScreen({ navigation }: SnapItemProps) {
   const [liveCode, setLiveCode] = useState<Scan | null>(null);
   const cameraRef = useRef<CameraView>(null);
   const capturing = useRef(false);
+  const cutoutSlot = useRef<CutoutSlot>({ imageId: null, cutout: null });
 
-  useHardwareBack(phase.step !== "camera" && phase.step !== "processing", () =>
-    setPhase(phase.step === "scanBarcode" ? { step: "review", shot: phase.shot } : { step: "camera" }),
-  );
+  useEffect(() => {
+    const slot = cutoutSlot.current;
+    return () => dropCutout(slot);
+  }, []);
+
+  useHardwareBack(phase.step !== "camera" && phase.step !== "processing", () => {
+    if (phase.step === "scanBarcode") {
+      setPhase({ step: "review", shot: phase.shot });
+    } else {
+      dropCutout(cutoutSlot.current);
+      setPhase({ step: "camera" });
+    }
+  });
 
   if (permission === null) {
     return <View className="flex-1 bg-cam-paper" />;
@@ -85,6 +114,7 @@ export function SnapItemScreen({ navigation }: SnapItemProps) {
   }
 
   const retake = () => {
+    dropCutout(cutoutSlot.current);
     setLiveCode(null);
     setPhase({ step: "camera" });
   };
@@ -111,7 +141,27 @@ export function SnapItemScreen({ navigation }: SnapItemProps) {
       const ocr = await runOcr(record.localUri ?? photo.uri);
       const codes = rankScannedCodes(seenLive === null ? still : [...still, seenLive]);
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      setPhase({ step: "review", shot: { image: record, ocr, codes, code: codes[0] ?? null } });
+      setPhase({
+        step: "review",
+        shot: { image: record, ocr, codes, code: codes[0] ?? null, cutout: null, fullPhoto: false },
+      });
+      // Never awaited: the price review must not wait for the cutout.
+      cutoutSlot.current.imageId = record.id;
+      void findCutout(record, ocr).then((cutout) => {
+        if (cutout === null) {
+          return;
+        }
+        if (cutoutSlot.current.imageId !== record.id) {
+          discardCutout(cutout);
+          return;
+        }
+        cutoutSlot.current.cutout = cutout;
+        setPhase((now) =>
+          (now.step === "review" || now.step === "scanBarcode") && now.shot.image.id === record.id
+            ? { ...now, shot: { ...now.shot, cutout } }
+            : now,
+        );
+      });
     } catch (cause) {
       setPhase({ step: "error", message: cause instanceof Error ? cause.message : "Capture failed" });
     } finally {
@@ -207,6 +257,11 @@ export function SnapItemScreen({ navigation }: SnapItemProps) {
   const nameSuggestions = shot.ocr === null ? [] : guessItemNames(shot.ocr.lines);
 
   const confirm = (price: CapturedPrice) => {
+    if (shot.cutout !== null && !shot.fullPhoto) {
+      keepCutout(db, shot.image.id, shot.cutout);
+      cutoutSlot.current.cutout = null;
+    }
+    dropCutout(cutoutSlot.current);
     if (match !== null) {
       navigation.replace("PriceCapture", {
         productId: match.product.id,
@@ -235,6 +290,7 @@ export function SnapItemScreen({ navigation }: SnapItemProps) {
           normalized={normalized}
           onPick={(picked) => setPhase({ step: "review", shot: { ...shot, code: picked } })}
           onScanLive={() => setPhase({ step: "scanBarcode", shot })}
+          onToggleFullPhoto={() => setPhase({ step: "review", shot: { ...shot, fullPhoto: !shot.fullPhoto } })}
         />
       }
     />
@@ -249,6 +305,7 @@ function ShotHeader({
   normalized,
   onPick,
   onScanLive,
+  onToggleFullPhoto,
 }: {
   shot: Shot;
   productName: string | null;
@@ -257,12 +314,32 @@ function ShotHeader({
   normalized: string | null;
   onPick: (code: ScannedCode) => void;
   onScanLive: () => void;
+  onToggleFullPhoto: () => void;
 }) {
   const [typed, setTyped] = useState("");
   const typedValid = isProbablyBarcode(typed.trim());
 
   return (
     <View className="gap-3">
+      {shot.cutout !== null ? (
+        <View className="flex-row items-center gap-3">
+          <View className="h-20 w-20 overflow-hidden rounded-2xl border-2 border-outline bg-sand">
+            <Image
+              source={{ uri: shot.fullPhoto ? (shot.image.thumbnailUri ?? shot.image.localUri ?? undefined) : shot.cutout.uri }}
+              style={{ flex: 1 }}
+              resizeMode={shot.fullPhoto ? "cover" : "contain"}
+              accessibilityLabel={shot.fullPhoto ? "Cart sticker preview, full photo" : "Cart sticker preview, item cut out"}
+            />
+          </View>
+          <View className="flex-1 items-start gap-1">
+            <Text variant="label" tone="secondary">
+              Cart sticker
+            </Text>
+            <Chip label="Use full photo" selected={shot.fullPhoto} onPress={onToggleFullPhoto} />
+          </View>
+        </View>
+      ) : null}
+
       {shot.codes.length > 1 ? (
         <View className="gap-2">
           <Text variant="label" tone="secondary">

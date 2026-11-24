@@ -376,6 +376,20 @@ export const syncMeta = sqliteTable("sync_meta", {
 });
 
 /**
+ * Background-removed sticker art for an image. Local-only: derived from the
+ * photo on this device, so it is deliberately not in SYNC_TABLES.
+ */
+export const imageCutouts = sqliteTable("image_cutouts", {
+  imageId: text("image_id")
+    .primaryKey()
+    .references(() => images.id),
+  uri: text("uri").notNull(),
+  width: integer("width").notNull(),
+  height: integer("height").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+});
+
+/**
  * Store-specific receipt aliases (spec: confirmed receipt-line matches are
  * learned so future receipts at the same store map descriptions to products).
  */
